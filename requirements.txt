@@ -1,4 +1,4 @@
 numpy==1.26.4
-eol==0.9.0
+eol==0.7.5
 pandas==2.2.0
 ruamel.yaml==0.18.6
