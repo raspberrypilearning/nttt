@@ -3,10 +3,10 @@ import os
 import setuptools
 
 if sys.version_info[0] == 2:
-    raise ValueError('This package requires Python 3.7 or newer')
+    raise ValueError('This package requires Python 3.11 or newer')
 elif sys.version_info[0] == 3:
-    if not sys.version_info >= (3, 7):
-        raise ValueError('This package requires Python 3.7 or newer')
+    if not sys.version_info >= (3, 11):
+        raise ValueError('This package requires Python 3.11 or newer')
 else:
     raise ValueError('Unrecognized major version of Python')
 
@@ -40,6 +40,6 @@ setuptools.setup(
         'eol',
         'ruamel.yaml',
     ],
-    python_requires='>=3.7',
+    python_requires='>=3.11',
     zip_safe=False
 )

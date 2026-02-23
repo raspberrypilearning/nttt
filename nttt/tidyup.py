@@ -36,7 +36,7 @@ def revert_untranslatable_meta_elements(content, english_content):
     parsed_md = yaml_parser.load(content)
     english_parsed_md = yaml_parser.load(english_content)
 
-    translatable_keys = ["title", "description", "steps"]
+    translatable_keys = ["title", "description", "steps", "meta_title", "meta_description"]
     for key in parsed_md:
         if key not in translatable_keys and key in english_parsed_md:
             parsed_md[key] = english_parsed_md[key]
