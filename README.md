@@ -4,6 +4,10 @@
 
 Note - NTTT will work on Windows, macOS and Linux.
 
+## Documentation
+
+For maintainers, [doc/transformations.md](doc/transformations.md) describes what NTTT changes in `meta.yml` and Markdown files (sections, HTML, formatting, URLs, and related behaviour).
+
 ## Prerequisites
 
 The tool requires having Python 3.7 or newer. 
