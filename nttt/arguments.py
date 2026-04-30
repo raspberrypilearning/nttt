@@ -4,6 +4,45 @@ from pathlib import Path
 from argparse import ArgumentParser
 
 
+def add_tidyup_arguments(parser):
+    parser.add_argument("-i", "--input",      help="The input directory which contains the content to tidy up, defaults to the current directory.")
+    parser.add_argument("-o", "--output",     help="The output directory where the upgraded content should be written, defaults to the same as INPUT.")
+    parser.add_argument("-e", "--english",    help="The directory which contains the English files and folders, defaults to INPUT/../en.")
+    parser.add_argument("-l", "--language",   help="The language of the content to be tidied up, defaults to basename(INPUT).")
+    parser.add_argument("-v", "--volunteers", help="The list of volunteers as a comma separated list, defaults to an empty list.")
+    parser.add_argument("-f", "--final",      help="The number of the final step file, defaults to the step file with the highest number.")
+    parser.add_argument("-D", "--Disable",    help="The risky features to be disabled, separated by commas. "
+                                                   "Options are: fix_md (fix common markdown-related issues), "
+                                                   "fix_html (fix common issues in HTML-like tags (<kbd>Return</kbd>)), "
+                                                   "fix_sections (fix common issues in section tags (--- hint ---)), "
+                                                   "revert_section_translation (revert translation for section tags), "
+                                                   "fix_alerts (fix common issues in modern alert tags (> [!TASK])), "
+                                                   "revert_alert_translation (revert translation for modern alert types), "
+                                                   "fix_codeblocks (fix common issues in fenced codeblock info strings), "
+                                                   "fix_formatting (fix common issues in formatting tags ({:class=\"block3motion\"})). "
+                                                   "Defaults to all risky features to be enabled.")
+    parser.add_argument("-L", "--Logging",    help="Logging of modifications. Options are on and off. Default is off.")
+    parser.add_argument("-Y", "--Yes",        help="Automatic yes to prompts. "
+                                                   "If enabled assume 'yes' as answer to all prompts and run non-interactively. "
+                                                   "Options are on and off. Default is off.")
+
+
+def add_strip_arguments(parser):
+    parser.add_argument("-i", "--input", required=True, help="The English source directory to strip.")
+    parser.add_argument("-o", "--output", required=True, help="The output directory where the Crowdin-ready copy should be written.")
+    parser.add_argument("--debug-sidecars", action="store_true", help="Write optional .nttt.json sidecars for inspection.")
+
+
+def add_restore_arguments(parser):
+    parser.add_argument("-i", "--input", required=True, help="The translated directory to restore.")
+    parser.add_argument("-e", "--english", required=True, help="The English source directory used to regenerate placeholders.")
+    parser.add_argument("-o", "--output", required=True, help="The output directory where restored files should be written.")
+    parser.add_argument("--then-tidyup", action="store_true", help="Run the tidy-up pipeline after restoring.")
+    parser.add_argument("-D", "--Disable", help="The tidy-up features to disable when --then-tidyup is used, separated by commas.")
+    parser.add_argument("-L", "--Logging", help="Logging of modifications. Options are on and off. Default is off.")
+    parser.add_argument("-Y", "--Yes", help="Automatic yes to prompts when --then-tidyup is used. Options are on and off. Default is off.")
+
+
 def get_absolute_path(folder):
     '''
     Returns the absolute path for the given folder. Trailing path separators
@@ -45,23 +84,15 @@ def parse_command_line(version):
     """
 
     parser = ArgumentParser(description="Nina's Translation Tidyup Tool v{}".format(version))
-    parser.add_argument("-i", "--input",      help="The input directory which contains the content to tidy up, defaults to the current directory.")
-    parser.add_argument("-o", "--output",     help="The output directory where the upgraded content should be written, defaults to the same as INPUT.")
-    parser.add_argument("-e", "--english",    help="The directory which contains the English files and folders, defaults to INPUT/../en.")
-    parser.add_argument("-l", "--language",   help="The language of the content to be tidied up, defaults to basename(INPUT).")
-    parser.add_argument("-v", "--volunteers", help="The list of volunteers as a comma separated list, defaults to an empty list.")
-    parser.add_argument("-f", "--final",      help="The number of the final step file, defaults to the step file with the highest number.")
-    parser.add_argument("-D", "--Disable",    help="The risky features to be disabled, separated by commas. "
-                                                   "Options are: fix_md (fix common markdown-related issues), "
-                                                   "fix_html (fix common issues in HTML-like tags (<kbd>Return</kbd>)), "
-                                                   "fix_sections (fix common issues in section tags (--- hint ---)), "
-                                                   "revert_section_translation (revert translation for section tags), "
-                                                   "fix_formatting (fix common issues in formatting tags ({:class=\"block3motion\"})). "
-                                                   "Defaults to all risky features to be enabled.")
-    parser.add_argument("-L", "--Logging",    help="Logging of modifications. Options are on and off. Default is off.")
-    parser.add_argument("-Y", "--Yes",        help="Automatic yes to prompts. "
-                                                   "If enabled assume 'yes' as answer to all prompts and run non-interactively. "
-                                                   "Options are on and off. Default is off.")
+    add_tidyup_arguments(parser)
+    subparsers = parser.add_subparsers(dest="command")
+
+    strip_parser = subparsers.add_parser("strip", help="Strip non-translatable markers for Crowdin upload.")
+    add_strip_arguments(strip_parser)
+
+    restore_parser = subparsers.add_parser("restore", help="Restore non-translatable markers after Crowdin download.")
+    add_restore_arguments(restore_parser)
+
     return parser.parse_args()
 
 
@@ -75,47 +106,47 @@ def resolve_arguments(command_line_args):
 
     arguments = {}
 
-    if command_line_args.input:
+    if getattr(command_line_args, "input", False):
         arguments[ArgumentKeyConstants.INPUT] = get_absolute_path(command_line_args.input)
     else:
         arguments[ArgumentKeyConstants.INPUT] = get_absolute_path('.')
 
-    if command_line_args.output:
+    if getattr(command_line_args, "output", False):
         arguments[ArgumentKeyConstants.OUTPUT] = get_absolute_path(command_line_args.output)
     else:
         arguments[ArgumentKeyConstants.OUTPUT] = arguments[ArgumentKeyConstants.INPUT]
 
-    if command_line_args.english:
+    if getattr(command_line_args, "english", False):
         arguments[ArgumentKeyConstants.ENGLISH] = get_absolute_path(command_line_args.english)
     else:
         arguments[ArgumentKeyConstants.ENGLISH] = Path(dirname(arguments[ArgumentKeyConstants.INPUT]), 'en')
 
-    if command_line_args.language:
+    if getattr(command_line_args, "language", False):
         arguments[ArgumentKeyConstants.LANGUAGE] = command_line_args.language
     else:
         arguments[ArgumentKeyConstants.LANGUAGE] = basename(arguments[ArgumentKeyConstants.INPUT])
 
-    if command_line_args.volunteers:
+    if getattr(command_line_args, "volunteers", False):
         arguments[ArgumentKeyConstants.VOLUNTEERS] = [name.strip() for name in command_line_args.volunteers.split(',')]
     else:
         arguments[ArgumentKeyConstants.VOLUNTEERS] = []
 
-    if command_line_args.final:
+    if getattr(command_line_args, "final", False):
         arguments[ArgumentKeyConstants.FINAL] = int(command_line_args.final)
     else:
         arguments[ArgumentKeyConstants.FINAL] = get_final_step(arguments[ArgumentKeyConstants.INPUT])
 
-    if command_line_args.Disable:
+    if getattr(command_line_args, "Disable", False):
         arguments[ArgumentKeyConstants.DISABLE] = command_line_args.Disable.split(",")
     else:
         arguments[ArgumentKeyConstants.DISABLE] = []
 
-    if command_line_args.Logging:
+    if getattr(command_line_args, "Logging", False):
         arguments[ArgumentKeyConstants.LOGGING] = command_line_args.Logging
     else:
         arguments[ArgumentKeyConstants.LOGGING] = "off"
 
-    if command_line_args.Yes:
+    if getattr(command_line_args, "Yes", False):
         arguments[ArgumentKeyConstants.YES] = command_line_args.Yes
     else:
         arguments[ArgumentKeyConstants.YES] = "off"

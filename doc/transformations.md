@@ -17,11 +17,14 @@ NTTT does **not** process standalone `.html` files. HTML-related steps run on **
 For each `.md` file, [`nttt/tidyup.py`](../nttt/tidyup.py) applies, in order:
 
 1. **`fix_sections`** — normalise `---` section lines (Crowdin quirks).
-2. **`revert_section_translation`** — optional; restore English section tag lines when structure matches.
-3. **`trim_md_tags`** — strip padding inside paired Markdown delimiters (outside ` ``` ` fences).
-4. **`trim_html_tags`** — strip padding inside simple inline HTML tags (outside single `` ` `` spans).
-5. **`trim_formatting_tags`** — normalise `{ … }` attribute blocks after a word (Scratch/Pico-style).
-6. **URL rewrite:** replace `/en/` with `/<language>/` everywhere in the file body.
+2. **`fix_alerts`** — normalise modern `> [!TYPE]` alert markers.
+3. **`revert_section_translation`** — optional; restore English section tag lines when structure matches.
+4. **`revert_alert_translation`** — optional; restore English alert type tokens when structure matches.
+5. **`trim_md_tags`** — strip padding inside paired Markdown delimiters (outside ` ``` ` fences).
+6. **`trim_html_tags`** — strip padding inside simple inline HTML tags (outside single `` ` `` spans).
+7. **`fix_codeblocks`** — normalise modern fenced-code info strings.
+8. **`trim_formatting_tags`** — normalise `{ … }` attribute blocks after a word (Scratch/Pico-style).
+9. **URL rewrite:** replace `/en/` with `/<language>/` everywhere in the file body.
 
 Steps 1–5 can be skipped via **`--disable`** (see [`nttt/arguments.py`](../nttt/arguments.py)).
 
@@ -49,7 +52,23 @@ Steps 1–5 can be skipped via **`--disable`** (see [`nttt/arguments.py`](../ntt
 
 ---
 
-## 2. Markdown delimiters (`nttt/cleanup_markdown.py`)
+## 2. Modern alerts (`nttt/cleanup_alerts.py`)
+
+**Function:** `fix_alerts`
+
+- Normalises modern alert markers such as `> [!TASK]`, `> [!HINT]`, `> [!ACCORDION] Title`, and nested markers such as `> > [!HINT]`.
+- Fixes spacing and casing around the marker: `>[ ! task ]` → `> [!TASK]`.
+- Preserves any title text after the marker because it is translatable.
+
+**Function:** `revert_alert_translation` (requires English `.md`)
+
+- Collects alert marker lines in translation and English.
+- If **counts and nesting depth match**, replaces only the translated alert type token with the English token.
+- If structure differs, logs a warning and leaves alert types unchanged for this step.
+
+---
+
+## 3. Markdown delimiters (`nttt/cleanup_markdown.py`)
 
 **Function:** `trim_md_tags`
 
@@ -63,7 +82,7 @@ Logging can record each replacement (`log_replacement`).
 
 ---
 
-## 3. Inline HTML (`nttt/cleanup_html.py`)
+## 4. Inline HTML (`nttt/cleanup_html.py`)
 
 **Function:** `trim_html_tags`
 
@@ -73,7 +92,20 @@ Logging can record each replacement (`log_replacement`).
 
 ---
 
-## 4. Formatting braces (`nttt/cleanup_formatting.py`)
+## 5. Codeblock info strings (`nttt/cleanup_codeblocks.py`)
+
+**Function:** `fix_codeblocks`
+
+- Normalises opening fenced-code lines such as ```` ```python filename="button.py" ````.
+- Lowercases the language token and attribute keys/values.
+- Normalises quotes and spacing around `=`.
+- Collapses spaces inside `line_highlights`, e.g. `"3, 5-6"` → `"3,5-6"`.
+- If the translated language token is not recognised and the English file is available, restores the English language token at the same fence index.
+- Does **not** change code inside the block or closing fences.
+
+---
+
+## 6. Formatting braces (`nttt/cleanup_formatting.py`)
 
 **Function:** `trim_formatting_tags`
 
@@ -84,7 +116,7 @@ Logging can record each replacement (`log_replacement`).
 
 ---
 
-## 5. Locale URLs (`nttt/tidyup.py`)
+## 7. Locale URLs (`nttt/tidyup.py`)
 
 After cleanup: **replace every `/en/` with `/<language>/`** in the Markdown file (`language` from resolved CLI args, defaulting from input folder basename).
 
@@ -98,6 +130,31 @@ After cleanup: **replace every `/en/` with `/<language>/`** in the Markdown file
 
 ---
 
+## Strip / restore workflow
+
+`nttt strip` prepares English source for Crowdin by replacing non-translatable markers with deterministic placeholders. `nttt restore` regenerates the same placeholder map from `en/` and re-injects the markers into translated files after Crowdin download.
+
+Typical workflow:
+
+1. Upload side: `nttt strip -i en/ -o .crowdin-staging/en/`
+2. Crowdin translates `.crowdin-staging/en/`
+3. Download side: `nttt restore -i fr-FR/ -e en/ -o fr-FR/`
+4. Existing tidy-up: `nttt -i fr-FR/ -Y YES`
+
+Markdown placeholders use HTML comments such as `<!-- NTTT:7e3a1b-001 -->`. Configure Crowdin to treat `<!-- NTTT:[^ ]+ -->` as non-translatable.
+
+`strip` currently hides:
+
+- legacy section marker lines such as `--- task ---` and `--- /task ---`
+- modern alert type tokens such as `[!TASK]`
+- modern fenced-code info strings such as `python filename="button.py"`
+- inline kramdown class metadata such as `{:class="block3looks"}`
+- non-translatable `meta.yml` keys by dropping anything outside `title`, `description`, `steps`, `meta_title`, and `meta_description`
+
+`restore` is safe to run on older Crowdin downloads that do not contain placeholders; it is a no-op for those files. It warns, but does not fail, if placeholders are missing or unknown.
+
+---
+
 ## Quick code map
 
 | Concern | Module |
@@ -105,7 +162,10 @@ After cleanup: **replace every `/en/` with `/<language>/`** in the Markdown file
 | Orchestration | `nttt/tidyup.py`, `nttt/__init__.py` |
 | CLI / disable flags | `nttt/arguments.py` |
 | Sections | `nttt/cleanup_sections.py` |
+| Modern alerts | `nttt/cleanup_alerts.py` |
 | Markdown emphasis / code delimiters | `nttt/cleanup_markdown.py` |
 | Inline HTML | `nttt/cleanup_html.py` |
+| Codeblock info strings | `nttt/cleanup_codeblocks.py` |
 | Brace attributes | `nttt/cleanup_formatting.py` |
+| Strip / restore | `nttt/strip.py`, `nttt/restore.py` |
 | Split "every other segment" | `nttt/utilities.py` → `apply_to_every_other_part` |
