@@ -114,23 +114,6 @@ You can specify different directories for the input and output folder using the 
 nttt --input c:\path\to\project\de-DE --output c:\path\to\project\de-DE-tidy
 ```
 
-### Crowdin strip and restore
-
-NTTT can also prepare English source for Crowdin and restore non-translatable markers after translated content is downloaded.
-
-```bash
-# Before upload: hide non-translatable markers from Crowdin.
-nttt strip --input en --output .crowdin-staging/en
-
-# After download: restore markers into a translated locale.
-nttt restore --input fr-FR --english en --output fr-FR
-
-# Restore and then run the usual tidy-up in one command.
-nttt restore --input fr-FR --english en --output fr-FR --then-tidyup --Yes on
-```
-
-`strip` replaces legacy section markers, modern alert type tokens, codeblock info strings, inline kramdown class metadata, and non-translatable `meta.yml` keys with deterministic placeholders. `restore` regenerates the placeholder map from `en/`, so no sidecar files need to be persisted between workflows. See [doc/transformations.md](doc/transformations.md) for details.
-
 ### Help
 
 To bring up full usage information use the `-h`/`--help` option.
@@ -139,8 +122,6 @@ To bring up full usage information use the `-h`/`--help` option.
 nttt -h
 
 usage: nttt [-h] [-i INPUT] [-o OUTPUT] [-e ENGLISH] [-l LANGUAGE] [-v VOLUNTEERS] [-f FINAL]
-            [-D DISABLE] [-L LOGGING] [-Y YES]
-            {strip,restore} ...
 
 Nina's Translation Tidyup Tool
 
@@ -165,16 +146,6 @@ optional arguments:
   -f FINAL, --final FINAL
                         The number of the final step file, defaults to the
                         step file with the highest number.
-  -D DISABLE, --Disable DISABLE
-                        The risky features to be disabled, separated by commas.
-                        Options include fix_md, fix_html, fix_sections,
-                        revert_section_translation, fix_alerts,
-                        revert_alert_translation, fix_codeblocks, and
-                        fix_formatting.
-
-subcommands:
-  strip                 Strip non-translatable markers for Crowdin upload.
-  restore               Restore non-translatable markers after Crowdin download.
 
 examples of usage:
   nttt
