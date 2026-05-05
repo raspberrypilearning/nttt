@@ -65,6 +65,14 @@ pip3 install . --upgrade
 
 ![install nttt](images/install_nttt.png)
 
+You could also use `pipx` (instructions below for Mac using homebrew):
+
+```bash
+brew install pipx
+pipx install /path/to/project/nttt
+nttt --help
+```
+
 You can uninstall nttt using:
 
 ```bash
