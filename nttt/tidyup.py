@@ -10,6 +10,7 @@ from .cleanup_html import trim_html_tags
 from .cleanup_formatting import trim_formatting_tags
 from .cleanup_sections import fix_sections
 from .cleanup_sections import revert_section_translation
+from .restore import restore_tree
 
 
 def fix_meta(src, english_src, dst):
@@ -104,6 +105,10 @@ def tidyup_translations(arguments):
             continue_with_cleanup = (process_yn.casefold() == "y")
 
         if continue_with_cleanup:
+            if language != "en" and os.path.isdir(english_folder):
+                print("Restoring stripped markers ...")
+                restore_tree(input_folder, english_folder, output_folder)
+
             for source_file_path in files_to_update:
                 relative_input_file_name = os.path.relpath(source_file_path, input_folder)
 

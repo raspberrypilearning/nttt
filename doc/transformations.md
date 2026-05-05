@@ -16,18 +16,41 @@ NTTT does **not** process standalone `.html` files. HTML-related steps run on **
 
 For each `.md` file, [`nttt/tidyup.py`](../nttt/tidyup.py) applies, in order:
 
-1. **`fix_sections`** — normalise `---` section lines (Crowdin quirks).
-2. **`revert_section_translation`** — optional; restore English section tag lines when structure matches.
-3. **`trim_md_tags`** — strip padding inside paired Markdown delimiters (outside ` ``` ` fences).
-4. **`trim_html_tags`** — strip padding inside simple inline HTML tags (outside single `` ` `` spans).
-5. **`trim_formatting_tags`** — normalise `{ … }` attribute blocks after a word (Scratch/Pico-style).
-6. **URL rewrite:** replace `/en/` with `/<language>/` everywhere in the file body.
+1. **`restore_tree`** — for non-English locale folders, restore Markdown markers stripped before Crowdin upload.
+2. **`fix_sections`** — normalise `---` section lines (Crowdin quirks).
+3. **`revert_section_translation`** — optional; restore English section tag lines when structure matches.
+4. **`trim_md_tags`** — strip padding inside paired Markdown delimiters (outside ` ``` ` fences).
+5. **`trim_html_tags`** — strip padding inside simple inline HTML tags (outside single `` ` `` spans).
+6. **`trim_formatting_tags`** — normalise `{ … }` attribute blocks after a word (Scratch/Pico-style).
+7. **URL rewrite:** replace `/en/` with `/<language>/` everywhere in the file body.
 
 Steps 1–5 can be skipped via **`--disable`** (see [`nttt/arguments.py`](../nttt/arguments.py)).
 
 `meta.yml` is handled separately by **`fix_meta`** (YAML round-trip, revert non-translatable keys from English). This doc focuses on Markdown/HTML-style transforms.
 
 ---
+
+## Crowdin marker strip/restore (`nttt/strip.py`, `nttt/restore.py`)
+
+**Modes:** `--mode strip`, `--mode restore`, and default `--mode tidy`.
+
+| Mode | Behaviour |
+|------|-----------|
+| `strip` | Runs on `en/` before Crowdin upload. Removes structural-only markers and keeps labelled marker text translatable. |
+| `restore` | Runs on a locale folder after Crowdin download. Rebuilds markers from the matching English file. |
+| `tidy` | For non-English locale folders, runs restore first, then the existing tidy transforms. |
+
+**Marker classification (`nttt/markers.py`):**
+
+| Kind | Pattern | Strip output | Restore output |
+|------|---------|--------------|----------------|
+| Modern bare | `> [!TASK]`, `> [!SAVE]`, nested forms like `> > [!HINT]` | Dropped. A following empty blockquote line (`>`, `> >`) is also dropped. | Copied back from `en/`. |
+| Modern labelled | `> [!ACCORDION] Where are my voice recordings stored?` | Rewritten to `> Where are my voice recordings stored?`. | Rewritten to `> [!ACCORDION] <translated label>`. |
+| Legacy bare | `--- task ---`, `--- /task ---`, `--- print-only ---`, `--- feedback ---` | Dropped. | Copied back from `en/`. |
+
+Restore uses line-index alignment against the stripped English file. If the translated file has a different number of lines from the stripped English reference, NTTT logs a warning and leaves that file unchanged for this step.
+
+Fenced code blocks split by ` ``` ` are not stripped.
 
 ## 1. Section markers (`nttt/cleanup_sections.py`)
 

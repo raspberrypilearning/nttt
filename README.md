@@ -114,6 +114,28 @@ You can specify different directories for the input and output folder using the 
 nttt --input c:\path\to\project\de-DE --output c:\path\to\project\de-DE-tidy
 ```
 
+### Crowdin marker stripping and restoring
+
+NTTT has three processing modes:
+
+- `tidy` (default): restore stripped Markdown markers for non-English locale folders, then run the existing tidy-up transforms.
+- `strip`: remove non-translatable Markdown markers before uploading English source files to Crowdin.
+- `restore`: reinsert stripped Markdown markers into translated files after downloading from Crowdin.
+
+Use `strip` on the English source folder before Crowdin upload:
+
+```bash
+nttt --mode strip -i en -o en -Y on
+```
+
+Use `restore` on a translated locale folder after Crowdin download:
+
+```bash
+nttt --mode restore -i de-DE -e en -o de-DE -Y on
+```
+
+Modern bare markers such as `> [!TASK]` are removed entirely, along with their paired empty `>` line. Modern labelled markers such as `> [!ACCORDION] Where are my voice recordings stored?` keep the label available for translation by becoming `> Where are my voice recordings stored?`; restore reinserts `[!ACCORDION]` before the translated label. Legacy markers such as `--- task ---` and `--- /task ---` are also removed and restored by line alignment against `en/`.
+
 ### Help
 
 To bring up full usage information use the `-h`/`--help` option.

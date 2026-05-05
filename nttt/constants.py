@@ -17,6 +17,13 @@ class ArgumentKeyConstants:
     DISABLE = 'DISABLE'
     LOGGING = 'LOGGING'
     YES = 'YES'
+    MODE = 'MODE'
+
+
+class Modes:
+    TIDY = "tidy"
+    STRIP = "strip"
+    RESTORE = "restore"
 
 
 class RegexConstants:

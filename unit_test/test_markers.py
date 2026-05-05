@@ -1,0 +1,52 @@
+import unittest
+from nttt.markers import (
+    LINE_KIND_BARE_MARKER,
+    LINE_KIND_LABELLED_MARKER,
+    LINE_KIND_PAIRED_EMPTY_BLOCKQUOTE,
+    LINE_KIND_REGULAR,
+    classify_line,
+    is_marker_line,
+    is_paired_empty_blockquote,
+)
+
+
+class TestMarkers(unittest.TestCase):
+    def assert_line_kind(self, line, expected_kind):
+        line_kind, _ = classify_line(line)
+        self.assertEqual(line_kind, expected_kind)
+
+    def test_bare_modern_markers(self):
+        self.assert_line_kind("> [!TASK]", LINE_KIND_BARE_MARKER)
+        self.assert_line_kind("> [!NOPRINT]", LINE_KIND_BARE_MARKER)
+        self.assert_line_kind("> [!PRINTONLY]", LINE_KIND_BARE_MARKER)
+        self.assert_line_kind("> [!HINT]", LINE_KIND_BARE_MARKER)
+        self.assert_line_kind("> [!CHALLENGE]", LINE_KIND_BARE_MARKER)
+        self.assert_line_kind("> [!SAVE]", LINE_KIND_BARE_MARKER)
+        self.assert_line_kind("> > [!TASK]", LINE_KIND_BARE_MARKER)
+
+    def test_labelled_modern_markers(self):
+        line_kind, match = classify_line("> [!ACCORDION] Where are my voice recordings stored?")
+        self.assertEqual(line_kind, LINE_KIND_LABELLED_MARKER)
+        self.assertEqual(match.group("tag"), "ACCORDION")
+        self.assertEqual(match.group("label"), "Where are my voice recordings stored?")
+
+    def test_empty_blockquote(self):
+        self.assert_line_kind(">", LINE_KIND_PAIRED_EMPTY_BLOCKQUOTE)
+        self.assert_line_kind("> >", LINE_KIND_PAIRED_EMPTY_BLOCKQUOTE)
+        self.assertTrue(is_paired_empty_blockquote(">"))
+
+    def test_bare_legacy_markers(self):
+        self.assert_line_kind("--- task ---", LINE_KIND_BARE_MARKER)
+        self.assert_line_kind("--- /task ---", LINE_KIND_BARE_MARKER)
+        self.assert_line_kind("  --- feedback ---", LINE_KIND_BARE_MARKER)
+        self.assert_line_kind("--- print-only ---", LINE_KIND_BARE_MARKER)
+
+    def test_negative_cases(self):
+        self.assert_line_kind("This paragraph contains --- task --- text.", LINE_KIND_REGULAR)
+        self.assert_line_kind("\\--- task \\---", LINE_KIND_REGULAR)
+        self.assert_line_kind("> Quote text", LINE_KIND_REGULAR)
+        self.assertFalse(is_marker_line("> Quote text"))
+
+
+if __name__ == "__main__":
+    unittest.main()
