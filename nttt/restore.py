@@ -2,6 +2,7 @@ import os
 import re
 import sys
 from .markers import (
+    LEGACY_BARE_MARKER_PATTERN,
     LINE_KIND_BARE_MARKER,
     LINE_KIND_LABELLED_MARKER,
     LINE_KIND_PAIRED_EMPTY_BLOCKQUOTE,
@@ -18,8 +19,31 @@ from .utilities import find_files, get_file, save_file
 
 TRANSLATED_LABEL_PATTERN = re.compile(r'^(?P<prefix>\s*(?:>\s*)+)(?P<label>.*)$')
 
+# Signals that the translated content is NOT in pure-stripped form and therefore
+# does not need restoration. Pure-stripped output (from `nttt --mode strip`)
+# cannot contain any of these:
+#   - `\---` Crowdin escape sequence
+#   - heading-jammed markers like `## --- collapse ---` or `## \--- collapse \---`
+#   - canonical legacy bare markers (e.g. `--- collapse ---`)
+_CROWDIN_ESCAPE_RE = re.compile(r'\\---')
+_CROWDIN_HEADING_JAM_RE = re.compile(r'^\s*##\s+\\?---', re.MULTILINE)
+
+
+def _looks_already_processed(translated_content):
+    if _CROWDIN_ESCAPE_RE.search(translated_content):
+        return True
+    if _CROWDIN_HEADING_JAM_RE.search(translated_content):
+        return True
+    for line in translated_content.splitlines():
+        if LEGACY_BARE_MARKER_PATTERN.match(line):
+            return True
+    return False
+
 
 def restore_md(translated_content, english_content, file_label):
+    if _looks_already_processed(translated_content):
+        return translated_content
+
     translated_lines = translated_content.splitlines(keepends=True)
     expected_line_count = len(strip_md(english_content).splitlines(keepends=True))
 

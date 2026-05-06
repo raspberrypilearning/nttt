@@ -1,5 +1,6 @@
 import unittest
 from nttt import cleanup_sections
+from nttt.restore import restore_md
 
 
 class TestCleanupSections(unittest.TestCase):
@@ -304,6 +305,99 @@ class TestCleanupSections(unittest.TestCase):
                     "--- /print-only ---")
 
         self.assertEqual(cleanup_sections.fix_sections(c_initial, self.logging), c_target)
+
+    def test_no_collapse_doubling_for_crowdin_broken_with_matching_line_count(self):
+        """
+        Regression for the user-reported bug: in default `tidy` mode, when a
+        Crowdin-broken locale file happens to have the same line count as the
+        stripped English reference, `restore_md` would insert legacy bare
+        markers from English while `fix_sections` separately rebuilt them from
+        the `## --- collapse ---` / `## title:` Crowdin pattern, producing
+        duplicated `--- collapse ---` and `--- /collapse ---` lines.
+
+        The pipeline (restore_md -> fix_sections) must produce a single,
+        canonical `--- collapse ---` block.
+        """
+        en = ("## What you will make\n"
+              "\n"
+              "Use the face recognition tools.\n"
+              "\n"
+              "You will need a **webcam**.\n"
+              "\n"
+              "![Image.](images/foo.png)\n"
+              "\n"
+              "--- collapse ---\n"
+              "---\n"
+              "title: Where are my images stored?\n"
+              "---\n"
+              "\n"
+              "- This project uses a technology.\n"
+              "- No images from your webcam.\n"
+              "\n"
+              "--- /collapse ---\n"
+              "\n"
+              "\n"
+              "--- collapse ---\n"
+              "---\n"
+              "title: No YouTube?\n"
+              "---\n"
+              "\n"
+              "You can [download].\n"
+              "\n"
+              "\n"
+              "--- /collapse ---\n")
+
+        fr = ("## Ce que tu vas faire\n"
+              "\n"
+              "Utilise les outils.\n"
+              "\n"
+              "Tu auras besoin d'une **webcam**.\n"
+              "\n"
+              "![Image.](images/foo.png)\n"
+              "\n"
+              "## \\--- collapse \\---\n"
+              "\n"
+              "## title: Ou sont stockees mes images ?\n"
+              "\n"
+              "- Ce projet.\n"
+              "- Aucune image.\n"
+              "\n"
+              "\\--- /collapse \\---\n"
+              "\n"
+              "## \\--- collapse \\---\n"
+              "\n"
+              "## title: Pas de YouTube ?\n"
+              "\n"
+              "Tu peux [telecharger].\n"
+              "\n"
+              "\\--- /collapse \\---\n")
+
+        # Mimic the default tidy pipeline: restore first, then fix_sections.
+        restored = restore_md(fr, en, "step_1.md")
+        fixed = cleanup_sections.fix_sections(restored, self.logging)
+
+        # No duplicate markers anywhere.
+        self.assertNotIn("--- collapse ---\n--- collapse ---", fixed)
+        self.assertNotIn("--- /collapse ---\n--- /collapse ---", fixed)
+
+        # Exactly two opening and two closing canonical legacy markers (one per
+        # collapse block, and no Crowdin-broken `## ---` patterns left over).
+        opening_lines = [line for line in fixed.splitlines() if line == "--- collapse ---"]
+        closing_lines = [line for line in fixed.splitlines() if line == "--- /collapse ---"]
+        self.assertEqual(len(opening_lines), 2)
+        self.assertEqual(len(closing_lines), 2)
+        self.assertNotIn("## ---", fixed)
+        self.assertNotIn("\\---", fixed)
+
+        # And the title blocks were rebuilt in canonical YAML form.
+        self.assertIn("--- collapse ---\n"
+                      "---\n"
+                      "title: Ou sont stockees mes images ?\n"
+                      "---\n", fixed)
+        self.assertIn("--- collapse ---\n"
+                      "---\n"
+                      "title: Pas de YouTube ?\n"
+                      "---\n", fixed)
 
 
 if __name__ == '__main__':
