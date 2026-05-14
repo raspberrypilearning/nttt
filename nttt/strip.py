@@ -4,6 +4,7 @@ from .markers import (
     LINE_KIND_LABELLED_MARKER,
     classify_line,
     get_eol,
+    iter_lines_with_fence_state,
     is_rfm_bare_marker_line,
     is_paired_empty_blockquote,
 )
@@ -11,31 +12,26 @@ from .utilities import find_files, get_file, save_file
 
 
 def strip_md(content):
-    parts = content.split("```")
-    processed_parts = []
-
-    for index in range(len(parts)):
-        if (index % 2) == 0:
-            processed_parts.append(_strip_md_outside_fences(parts[index]))
-        else:
-            processed_parts.append(parts[index])
-
-    return "```".join(processed_parts)
-
-
-def _strip_md_outside_fences(content):
-    lines = content.splitlines(keepends=True)
+    lines_with_fence_state = list(iter_lines_with_fence_state(content))
+    lines = [line for line, _ in lines_with_fence_state]
+    outside_fence = [not inside for _, inside in lines_with_fence_state]
     stripped_lines = []
     index = 0
 
     while index < len(lines):
         line = lines[index]
+        if not outside_fence[index]:
+            stripped_lines.append(line)
+            index += 1
+            continue
+
         line_kind, match = classify_line(line)
 
         if line_kind == LINE_KIND_BARE_MARKER:
             if (
                 is_rfm_bare_marker_line(line)
                 and index + 1 < len(lines)
+                and outside_fence[index + 1]
                 and is_paired_empty_blockquote(lines[index + 1])
             ):
                 index += 2

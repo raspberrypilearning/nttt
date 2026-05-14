@@ -5,6 +5,7 @@ from nttt.markers import (
     LINE_KIND_PAIRED_EMPTY_BLOCKQUOTE,
     LINE_KIND_REGULAR,
     classify_line,
+    iter_lines_with_fence_state,
     is_marker_line,
     is_paired_empty_blockquote,
 )
@@ -46,6 +47,24 @@ class TestMarkers(unittest.TestCase):
         self.assert_line_kind("\\--- task \\---", LINE_KIND_REGULAR)
         self.assert_line_kind("> Quote text", LINE_KIND_REGULAR)
         self.assertFalse(is_marker_line("> Quote text"))
+
+    def test_iter_lines_with_fence_state_handles_two_fences_on_one_line(self):
+        content = (
+            "```inline```\n"
+            "> [!TASK]\n"
+            ">\n"
+            "> Body\n")
+
+        line_states = list(iter_lines_with_fence_state(content))
+
+        self.assertEqual(
+            line_states,
+            [
+                ("```inline```\n", False),
+                ("> [!TASK]\n", False),
+                (">\n", False),
+                ("> Body\n", False),
+            ])
 
 
 if __name__ == "__main__":

@@ -9,6 +9,7 @@ from .markers import (
     LINE_KIND_REGULAR,
     classify_line,
     get_eol,
+    iter_lines_with_fence_state,
     is_rfm_bare_marker_line,
     is_paired_empty_blockquote,
     remove_eol,
@@ -97,24 +98,17 @@ def restore_tree(input_folder, english_folder, output_folder):
 
 
 def _build_english_actions(english_content):
-    lines = english_content.splitlines(keepends=True)
+    lines_with_fence_state = list(iter_lines_with_fence_state(english_content))
+    lines = [line for line, _ in lines_with_fence_state]
+    outside_fence = [not inside for _, inside in lines_with_fence_state]
     actions = []
     index = 0
-    inside_fenced_code = False
 
     while index < len(lines):
         line = lines[index]
 
-        if inside_fenced_code:
+        if not outside_fence[index]:
             actions.append((LINE_KIND_REGULAR, line, None))
-            if "```" in line:
-                inside_fenced_code = False
-            index += 1
-            continue
-
-        if "```" in line:
-            actions.append((LINE_KIND_REGULAR, line, None))
-            inside_fenced_code = True
             index += 1
             continue
 
@@ -125,6 +119,7 @@ def _build_english_actions(english_content):
             if (
                 is_rfm_bare_marker_line(line)
                 and index + 1 < len(lines)
+                and outside_fence[index + 1]
                 and is_paired_empty_blockquote(lines[index + 1])
             ):
                 actions.append((LINE_KIND_PAIRED_EMPTY_BLOCKQUOTE, lines[index + 1], None))

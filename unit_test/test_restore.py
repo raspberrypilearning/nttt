@@ -36,6 +36,23 @@ class TestRestore(unittest.TestCase):
 
         self.assertEqual(restore_md(translated, english, "step_1.md"), expected)
 
+    def test_restore_bare_marker_after_inline_fences_on_same_line(self):
+        english = (
+            "```inline```\n"
+            "> [!TASK]\n"
+            ">\n"
+            "> Do this.\n")
+        translated = (
+            "```inline```\n"
+            "> Do this translated.\n")
+        expected = (
+            "```inline```\n"
+            "> [!TASK]\n"
+            ">\n"
+            "> Do this translated.\n")
+
+        self.assertEqual(restore_md(translated, english, "step_1.md"), expected)
+
     def test_restore_warns_and_skips_on_count_mismatch(self):
         english = "> [!TASK]\n>\n> Do this.\n"
         translated = "> Do this.\n> Extra line.\n"

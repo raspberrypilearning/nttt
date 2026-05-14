@@ -70,3 +70,12 @@ def is_rfm_bare_marker_line(line):
 def is_paired_empty_blockquote(line):
     line_kind, _ = classify_line(line)
     return line_kind == LINE_KIND_PAIRED_EMPTY_BLOCKQUOTE
+
+
+def iter_lines_with_fence_state(content):
+    inside_fenced_code = False
+
+    for line in content.splitlines(keepends=True):
+        yield line, inside_fenced_code
+        if line.count("```") % 2 == 1:
+            inside_fenced_code = not inside_fenced_code
