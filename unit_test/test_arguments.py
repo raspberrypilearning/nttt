@@ -59,7 +59,7 @@ class TestArguments(unittest.TestCase):
                 self.Disable = False
                 self.Logging = False
                 self.Yes = False
-                self.mode = False
+                self.mode = None
 
         # Using the os.chdir function for a subdirectory of a directory created
         # with TemporaryDirectory doesn't work on Windows and macOS. Therefore,
