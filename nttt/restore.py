@@ -9,7 +9,7 @@ from .markers import (
     LINE_KIND_REGULAR,
     classify_line,
     get_eol,
-    is_modern_bare_marker_line,
+    is_rfm_bare_marker_line,
     is_paired_empty_blockquote,
     remove_eol,
 )
@@ -123,7 +123,7 @@ def _build_english_actions(english_content):
         if line_kind == LINE_KIND_BARE_MARKER:
             actions.append((LINE_KIND_BARE_MARKER, line, match))
             if (
-                is_modern_bare_marker_line(line)
+                is_rfm_bare_marker_line(line)
                 and index + 1 < len(lines)
                 and is_paired_empty_blockquote(lines[index + 1])
             ):

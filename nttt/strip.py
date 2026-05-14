@@ -4,7 +4,7 @@ from .markers import (
     LINE_KIND_LABELLED_MARKER,
     classify_line,
     get_eol,
-    is_modern_bare_marker_line,
+    is_rfm_bare_marker_line,
     is_paired_empty_blockquote,
 )
 from .utilities import find_files, get_file, save_file
@@ -34,7 +34,7 @@ def _strip_md_outside_fences(content):
 
         if line_kind == LINE_KIND_BARE_MARKER:
             if (
-                is_modern_bare_marker_line(line)
+                is_rfm_bare_marker_line(line)
                 and index + 1 < len(lines)
                 and is_paired_empty_blockquote(lines[index + 1])
             ):

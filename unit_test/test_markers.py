@@ -15,7 +15,7 @@ class TestMarkers(unittest.TestCase):
         line_kind, _ = classify_line(line)
         self.assertEqual(line_kind, expected_kind)
 
-    def test_bare_modern_markers(self):
+    def test_bare_rfm_markers(self):
         self.assert_line_kind("> [!TASK]", LINE_KIND_BARE_MARKER)
         self.assert_line_kind("> [!NOPRINT]", LINE_KIND_BARE_MARKER)
         self.assert_line_kind("> [!PRINTONLY]", LINE_KIND_BARE_MARKER)
@@ -24,7 +24,7 @@ class TestMarkers(unittest.TestCase):
         self.assert_line_kind("> [!SAVE]", LINE_KIND_BARE_MARKER)
         self.assert_line_kind("> > [!TASK]", LINE_KIND_BARE_MARKER)
 
-    def test_labelled_modern_markers(self):
+    def test_labelled_rfm_markers(self):
         line_kind, match = classify_line("> [!ACCORDION] Where are my voice recordings stored?")
         self.assertEqual(line_kind, LINE_KIND_LABELLED_MARKER)
         self.assertEqual(match.group("tag"), "ACCORDION")

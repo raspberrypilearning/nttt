@@ -7,11 +7,11 @@ LINE_KIND_PAIRED_EMPTY_BLOCKQUOTE = "paired_empty_blockquote"
 LINE_KIND_REGULAR = "regular"
 
 
-MODERN_BARE_MARKER_PATTERN = re.compile(
+RFM_BARE_MARKER_PATTERN = re.compile(
     r'^(?P<prefix>\s*(?:>\s*)+)\[!(?P<tag>[A-Z][A-Z0-9_-]*)\]\s*$'
 )
 
-MODERN_LABELLED_MARKER_PATTERN = re.compile(
+RFM_LABELLED_MARKER_PATTERN = re.compile(
     r'^(?P<prefix>\s*(?:>\s*)+)\[!(?P<tag>[A-Z][A-Z0-9_-]*)\]\s+(?P<label>\S.*?)\s*$'
 )
 
@@ -39,11 +39,11 @@ def get_eol(line):
 def classify_line(line):
     line_without_eol = remove_eol(line)
 
-    match = MODERN_LABELLED_MARKER_PATTERN.match(line_without_eol)
+    match = RFM_LABELLED_MARKER_PATTERN.match(line_without_eol)
     if match:
         return LINE_KIND_LABELLED_MARKER, match
 
-    match = MODERN_BARE_MARKER_PATTERN.match(line_without_eol)
+    match = RFM_BARE_MARKER_PATTERN.match(line_without_eol)
     if match:
         return LINE_KIND_BARE_MARKER, match
 
@@ -63,8 +63,8 @@ def is_marker_line(line):
     return line_kind in (LINE_KIND_BARE_MARKER, LINE_KIND_LABELLED_MARKER)
 
 
-def is_modern_bare_marker_line(line):
-    return MODERN_BARE_MARKER_PATTERN.match(remove_eol(line)) is not None
+def is_rfm_bare_marker_line(line):
+    return RFM_BARE_MARKER_PATTERN.match(remove_eol(line)) is not None
 
 
 def is_paired_empty_blockquote(line):

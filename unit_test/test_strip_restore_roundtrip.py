@@ -13,7 +13,7 @@ class TestStripRestoreRoundtrip(unittest.TestCase):
         data_folder = Path(__file__).resolve().parent / "data" / "markdown"
         self.assert_roundtrip_file(data_folder / "labelled_accordions.md")
 
-    def test_nested_modern_markers(self):
+    def test_nested_rfm_markers(self):
         data_folder = Path(__file__).resolve().parent / "data" / "markdown"
         self.assert_roundtrip_file(data_folder / "nested_modern_markers.md")
 

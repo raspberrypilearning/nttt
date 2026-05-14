@@ -3,7 +3,7 @@ from nttt.strip import strip_md
 
 
 class TestStrip(unittest.TestCase):
-    def test_strip_bare_modern_marker_and_paired_empty_blockquote(self):
+    def test_strip_bare_rfm_marker_and_paired_empty_blockquote(self):
         content = (
             "Intro\n"
             "> [!TASK]\n"
@@ -16,7 +16,7 @@ class TestStrip(unittest.TestCase):
 
         self.assertEqual(strip_md(content), expected)
 
-    def test_strip_labelled_modern_marker_keeps_label(self):
+    def test_strip_labelled_rfm_marker_keeps_label(self):
         content = "> [!ACCORDION] Where are my voice recordings stored?\n>\n> Body\n"
         expected = "> Where are my voice recordings stored?\n>\n> Body\n"
 
