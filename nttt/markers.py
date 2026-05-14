@@ -20,6 +20,8 @@ LEGACY_BARE_MARKER_PATTERN = re.compile(
 )
 
 EMPTY_BLOCKQUOTE_PATTERN = re.compile(r'^\s*(?:>\s*)+$')
+FENCE_LINE_PREFIX_PATTERN = re.compile(r'^\s*(?:>\s*)*')
+SAME_LINE_FENCE_PATTERN = re.compile(r'^```[^`]*```$')
 
 
 def remove_eol(line):
@@ -77,5 +79,18 @@ def iter_lines_with_fence_state(content):
 
     for line in content.splitlines(keepends=True):
         yield line, inside_fenced_code
-        if line.count("```") % 2 == 1:
+        if _count_fence_markers(line) % 2 == 1:
             inside_fenced_code = not inside_fenced_code
+
+
+def _count_fence_markers(line):
+    content = remove_eol(line)
+    content_without_prefix = content[FENCE_LINE_PREFIX_PATTERN.match(content).end():]
+
+    if not content_without_prefix.startswith("```"):
+        return 0
+
+    if SAME_LINE_FENCE_PATTERN.match(content_without_prefix):
+        return 2
+
+    return 1

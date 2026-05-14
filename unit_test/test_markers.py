@@ -66,6 +66,60 @@ class TestMarkers(unittest.TestCase):
                 ("> Body\n", False),
             ])
 
+    def test_iter_lines_with_fence_state_ignores_inline_triple_backticks(self):
+        content = (
+            "Text with ` ``` ` inline\n"
+            "> [!TASK]\n"
+            ">\n"
+            "> Body\n")
+
+        line_states = list(iter_lines_with_fence_state(content))
+
+        self.assertEqual(
+            line_states,
+            [
+                ("Text with ` ``` ` inline\n", False),
+                ("> [!TASK]\n", False),
+                (">\n", False),
+                ("> Body\n", False),
+            ])
+
+    def test_iter_lines_with_fence_state_ignores_inline_triple_backticks_without_spaces(self):
+        content = (
+            "Text with ```inline``` marker\n"
+            "> [!TASK]\n"
+            ">\n"
+            "> Body\n")
+
+        line_states = list(iter_lines_with_fence_state(content))
+
+        self.assertEqual(
+            line_states,
+            [
+                ("Text with ```inline``` marker\n", False),
+                ("> [!TASK]\n", False),
+                (">\n", False),
+                ("> Body\n", False),
+            ])
+
+    def test_iter_lines_with_fence_state_handles_language_fence_open_and_close(self):
+        content = (
+            "```python\n"
+            "> [!TASK]\n"
+            "```\n"
+            "> Body\n")
+
+        line_states = list(iter_lines_with_fence_state(content))
+
+        self.assertEqual(
+            line_states,
+            [
+                ("```python\n", False),
+                ("> [!TASK]\n", True),
+                ("```\n", True),
+                ("> Body\n", False),
+            ])
+
 
 if __name__ == "__main__":
     unittest.main()
