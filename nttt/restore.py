@@ -19,31 +19,100 @@ from .utilities import find_files, get_file, save_file
 
 
 TRANSLATED_LABEL_PATTERN = re.compile(r'^(?P<prefix>\s*(?:>\s*)+)(?P<label>.*)$')
-
-# Signals that the translated content is NOT in pure-stripped form and therefore
-# does not need restoration. Pure-stripped output (from `nttt --mode strip`)
-# cannot contain any of these:
-#   - `\---` Crowdin escape sequence
-#   - heading-jammed markers like `## --- collapse ---` or `## \--- collapse \---`
-#   - canonical legacy bare markers (e.g. `--- collapse ---`)
-_CROWDIN_ESCAPE_RE = re.compile(r'\\---')
-_CROWDIN_HEADING_JAM_RE = re.compile(r'^\s*##\s+\\?---', re.MULTILINE)
+_CROWDIN_TITLE_HEADING_PATTERN = re.compile(r'^##\s*title:\s*(.+)$')
+_CROWDIN_HEADING_JAM_MARKER_PATTERN = re.compile(r'^\s*##\s+\\?---')
 
 
-def _looks_already_processed(translated_content):
-    if _CROWDIN_ESCAPE_RE.search(translated_content):
-        return True
-    if _CROWDIN_HEADING_JAM_RE.search(translated_content):
-        return True
+def _has_canonical_legacy_markers(translated_content):
     for line in translated_content.splitlines():
-        if LEGACY_BARE_MARKER_PATTERN.match(line):
+        if LEGACY_BARE_MARKER_PATTERN.match(remove_eol(line)):
             return True
     return False
 
 
+def _normalize_crowdin_stripped(translated_content):
+    content = translated_content.replace("\\---", "---")
+    lines = content.splitlines(keepends=True)
+    normalized_lines = []
+    index = 0
+
+    while index < len(lines):
+        line = lines[index]
+        bare_line = remove_eol(line)
+
+        if LEGACY_BARE_MARKER_PATTERN.match(bare_line):
+            index += 1
+            continue
+
+        if _CROWDIN_HEADING_JAM_MARKER_PATTERN.match(bare_line):
+            index += 1
+            continue
+
+        if bare_line.strip() == "---" and index + 1 < len(lines):
+            lookahead = index + 1
+            while lookahead < len(lines) and remove_eol(lines[lookahead]).strip() == "":
+                lookahead += 1
+            title_match = _CROWDIN_TITLE_HEADING_PATTERN.match(remove_eol(lines[lookahead]))
+            if title_match is not None:
+                eol = get_eol(line) or "\n"
+                normalized_lines.append(line)
+                normalized_lines.append("title: {}{}".format(
+                    title_match.group(1).strip(),
+                    get_eol(lines[lookahead]) or eol))
+                normalized_lines.append("---{}".format(eol))
+                index = lookahead + 1
+                continue
+
+        title_match = _CROWDIN_TITLE_HEADING_PATTERN.match(bare_line)
+        if title_match is not None:
+            eol = get_eol(line) or "\n"
+            normalized_lines.append("---{}".format(eol))
+            normalized_lines.append("title: {}{}".format(title_match.group(1).strip(), eol))
+            normalized_lines.append("---{}".format(eol))
+            index += 1
+            continue
+
+        normalized_lines.append(line)
+        index += 1
+
+    return "".join(normalized_lines)
+
+
+def _align_to_english_blanks(translated_content, english_content):
+    english_lines = strip_md(english_content).splitlines(keepends=True)
+    translated_lines = translated_content.splitlines(keepends=True)
+    aligned_lines = []
+    translated_index = 0
+
+    for english_line in english_lines:
+        if remove_eol(english_line).strip() == "":
+            aligned_lines.append(get_eol(english_line) or "\n")
+            if (
+                translated_index < len(translated_lines)
+                and remove_eol(translated_lines[translated_index]).strip() == ""
+            ):
+                translated_index += 1
+            continue
+
+        if translated_index >= len(translated_lines):
+            return None
+
+        aligned_lines.append(translated_lines[translated_index])
+        translated_index += 1
+
+    if translated_index != len(translated_lines):
+        return None
+
+    return "".join(aligned_lines)
+
+
 def restore_md(translated_content, english_content, file_label):
-    if _looks_already_processed(translated_content):
+    if _has_canonical_legacy_markers(translated_content):
         return translated_content
+
+    normalized_content = _normalize_crowdin_stripped(translated_content)
+    aligned_content = _align_to_english_blanks(normalized_content, english_content)
+    translated_content = aligned_content if aligned_content is not None else normalized_content
 
     translated_lines = translated_content.splitlines(keepends=True)
     expected_line_count = len(strip_md(english_content).splitlines(keepends=True))

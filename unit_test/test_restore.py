@@ -69,35 +69,12 @@ class TestRestore(unittest.TestCase):
 
         self.assertEqual(restore_md(translated, english, "step_1.md"), translated)
 
-    def test_restore_skips_when_translated_has_crowdin_escape(self):
-        # Pure-stripped output never contains `\---`. If it is present, the
-        # translated file is in Crowdin-mangled form and `fix_sections` will
-        # handle it; restoration must not run, otherwise it would duplicate the
-        # legacy bare markers from English.
+    def test_restore_crowdin_escape_and_heading_jam(self):
         english = (
             "Intro\n"
-            "--- collapse ---\n"
-            "Body\n"
-            "--- /collapse ---\n")
-        translated = (
-            "Intro translated\n"
-            "\\--- collapse \\---\n"
-            "Body translated\n"
-            "\\--- /collapse \\---\n")
-
-        with patch("sys.stderr", new_callable=io.StringIO) as stderr:
-            result = restore_md(translated, english, "step_1.md")
-
-        self.assertEqual(result, translated)
-        self.assertEqual(stderr.getvalue(), "")
-
-    def test_restore_skips_when_translated_has_heading_jammed_marker(self):
-        # `## --- collapse ---` is a Crowdin-broken heading-jammed marker.
-        # `fix_sections` rebuilds the canonical block; restoration must not run.
-        english = (
-            "## Heading\n"
             "\n"
             "--- collapse ---\n"
+            "\n"
             "---\n"
             "title: Notes\n"
             "---\n"
@@ -106,21 +83,67 @@ class TestRestore(unittest.TestCase):
             "\n"
             "--- /collapse ---\n")
         translated = (
-            "## Heading translated\n"
+            "Intro translated\n"
             "\n"
-            "## --- collapse ---\n"
+            "\\--- collapse \\---\n"
+            "\n"
+            "---\n"
             "\n"
             "## title: Notes translated\n"
             "\n"
             "Body translated\n"
             "\n"
+            "\\--- /collapse \\---\n")
+        expected = (
+            "Intro translated\n"
+            "\n"
+            "--- collapse ---\n"
+            "\n"
+            "---\n"
+            "title: Notes translated\n"
+            "---\n"
+            "\n"
+            "Body translated\n"
+            "\n"
             "--- /collapse ---\n")
 
-        with patch("sys.stderr", new_callable=io.StringIO) as stderr:
-            result = restore_md(translated, english, "step_1.md")
+        self.assertEqual(restore_md(translated, english, "step_1.md"), expected)
 
-        self.assertEqual(result, translated)
-        self.assertEqual(stderr.getvalue(), "")
+    def test_restore_crowdin_title_headings(self):
+        english = (
+            "Intro\n"
+            "\n"
+            "--- collapse ---\n"
+            "\n"
+            "---\n"
+            "title: Where are my images stored?\n"
+            "---\n"
+            "\n"
+            "Body\n"
+            "\n"
+            "--- /collapse ---\n")
+        translated = (
+            "Intro translated\n"
+            "\n"
+            "---\n"
+            "\n"
+            "## title: Wo werden meine Bilder gespeichert?\n"
+            "\n"
+            "Body translated\n")
+        expected = (
+            "Intro translated\n"
+            "\n"
+            "--- collapse ---\n"
+            "\n"
+            "---\n"
+            "title: Wo werden meine Bilder gespeichert?\n"
+            "---\n"
+            "\n"
+            "Body translated\n"
+            "\n"
+            "--- /collapse ---\n")
+
+        self.assertEqual(restore_md(translated, english, "step_1.md"), expected)
 
     def test_restore_skips_when_translated_already_has_legacy_marker(self):
         # If the translated file already has canonical `--- collapse ---`
