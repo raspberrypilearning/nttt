@@ -48,7 +48,7 @@ Steps 1–5 can be skipped via **`--disable`** (see [`nttt/arguments.py`](../ntt
 | Modern labelled | `> [!ACCORDION] Where are my voice recordings stored?` | Rewritten to `> Where are my voice recordings stored?`. | Rewritten to `> [!ACCORDION] <translated label>`. |
 | Legacy bare | `--- task ---`, `--- /task ---`, `--- print-only ---`, `--- feedback ---` | Dropped. | Copied back from `en/`. |
 
-Restore uses line-index alignment against the stripped English file. If the translated file has a different number of lines from the stripped English reference, NTTT logs a warning and leaves that file unchanged for this step.
+Restore uses line-index alignment against the stripped English file. If the translated file already contains at least as many legacy bare marker lines as the English reference, restore is skipped for that file to avoid duplicating markers. If the translated file has a different number of lines from the stripped English reference, NTTT logs a warning and leaves that file unchanged for this step.
 
 Fenced code blocks split by ` ``` ` are not stripped.
 

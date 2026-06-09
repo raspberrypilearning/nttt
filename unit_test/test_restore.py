@@ -165,6 +165,25 @@ class TestRestore(unittest.TestCase):
         self.assertEqual(result, translated)
         self.assertEqual(stderr.getvalue(), "")
 
+    def test_restore_still_inserts_when_stray_legacy_marker_present(self):
+        # A single orphaned legacy marker from Crowdin TM must not block restore.
+        english = (
+            "Intro\n"
+            "--- collapse ---\n"
+            "Body\n"
+            "--- /collapse ---\n")
+        translated = (
+            "--- task ---\n"
+            "Intro translated\n"
+            "Body translated\n")
+        expected = (
+            "Intro translated\n"
+            "--- collapse ---\n"
+            "Body translated\n"
+            "--- /collapse ---\n")
+
+        self.assertEqual(restore_md(translated, english, "step_1.md"), expected)
+
     def test_restore_still_inserts_when_pure_stripped(self):
         # Regression: a pure-stripped translated file (no `\---`, no `## ---`,
         # no canonical legacy markers) must still get its markers restored.
@@ -180,6 +199,47 @@ class TestRestore(unittest.TestCase):
             "Intro translated\n"
             "--- collapse ---\n"
             "Body translated\n"
+            "--- /collapse ---\n")
+
+        self.assertEqual(restore_md(translated, english, "step_1.md"), expected)
+
+
+    def test_restore_aligns_when_translated_has_extra_blank_lines(self):
+        english = (
+            "Line one\n"
+            "\n"
+            "--- collapse ---\n"
+            "\n"
+            "---\n"
+            "title: Notes\n"
+            "---\n"
+            "\n"
+            "Body\n"
+            "\n"
+            "--- /collapse ---\n")
+        translated = (
+            "Line one translated\n"
+            "\n"
+            "\n"
+            "---\n"
+            "\n"
+            "## title: Notes translated\n"
+            "\n"
+            "\n"
+            "Body translated\n"
+            "\n"
+            "\n")
+        expected = (
+            "Line one translated\n"
+            "\n"
+            "--- collapse ---\n"
+            "\n"
+            "---\n"
+            "title: Notes translated\n"
+            "---\n"
+            "\n"
+            "Body translated\n"
+            "\n"
             "--- /collapse ---\n")
 
         self.assertEqual(restore_md(translated, english, "step_1.md"), expected)

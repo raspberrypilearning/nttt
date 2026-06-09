@@ -391,12 +391,10 @@ class TestCleanupSections(unittest.TestCase):
 
         # And the title blocks were rebuilt in canonical YAML form.
         self.assertIn("--- collapse ---\n"
-                      "\n"
                       "---\n"
                       "title: Ou sont stockees mes images ?\n"
                       "---\n", fixed)
         self.assertIn("--- collapse ---\n"
-                      "\n"
                       "---\n"
                       "title: Pas de YouTube ?\n"
                       "---\n", fixed)

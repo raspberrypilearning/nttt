@@ -23,11 +23,18 @@ _CROWDIN_TITLE_HEADING_PATTERN = re.compile(r'^##\s*title:\s*(.+)$')
 _CROWDIN_HEADING_JAM_MARKER_PATTERN = re.compile(r'^\s*##\s+\\?---')
 
 
-def _has_canonical_legacy_markers(translated_content):
-    for line in translated_content.splitlines():
-        if LEGACY_BARE_MARKER_PATTERN.match(remove_eol(line)):
-            return True
-    return False
+def _count_legacy_bare_markers(content):
+    return sum(
+        1 for line in content.splitlines()
+        if LEGACY_BARE_MARKER_PATTERN.match(remove_eol(line))
+    )
+
+
+def _already_has_full_legacy_markers(translated_content, english_content):
+    english_count = _count_legacy_bare_markers(english_content)
+    if english_count == 0:
+        return False
+    return _count_legacy_bare_markers(translated_content) >= english_count
 
 
 def _normalize_crowdin_stripped(translated_content):
@@ -94,10 +101,22 @@ def _align_to_english_blanks(translated_content, english_content):
                 translated_index += 1
             continue
 
+        while (
+            translated_index < len(translated_lines)
+            and remove_eol(translated_lines[translated_index]).strip() == ""
+        ):
+            translated_index += 1
+
         if translated_index >= len(translated_lines):
             return None
 
         aligned_lines.append(translated_lines[translated_index])
+        translated_index += 1
+
+    while (
+        translated_index < len(translated_lines)
+        and remove_eol(translated_lines[translated_index]).strip() == ""
+    ):
         translated_index += 1
 
     if translated_index != len(translated_lines):
@@ -107,7 +126,7 @@ def _align_to_english_blanks(translated_content, english_content):
 
 
 def restore_md(translated_content, english_content, file_label):
-    if _has_canonical_legacy_markers(translated_content):
+    if _already_has_full_legacy_markers(translated_content, english_content):
         return translated_content
 
     normalized_content = _normalize_crowdin_stripped(translated_content)
