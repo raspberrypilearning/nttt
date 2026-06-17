@@ -1,96 +1,99 @@
+"""
+Loads and exposes the marker registry (``markers.yml``).
+
+This is the single source of truth for the structural markers used in both the
+legacy (kramdown-rpf) and the Raspberry Flavoured Markdown (RFM) syntaxes. Other
+modules ask this module *what* the markers are; the actual list lives in the data
+file so it can be edited without touching Python.
+"""
+import os
 import re
+import ruamel.yaml
 
 
-LINE_KIND_BARE_MARKER = "bare"
-LINE_KIND_LABELLED_MARKER = "labelled"
-LINE_KIND_PAIRED_EMPTY_BLOCKQUOTE = "paired_empty_blockquote"
-LINE_KIND_REGULAR = "regular"
+_MARKERS_FILE = os.path.join(os.path.dirname(__file__), "markers.yml")
+_registry_cache = None
+
+# Matches an RFM alert token such as "[!TASK]" and captures the keyword.
+_ALERT_TOKEN_RE = re.compile(r"\[!\s*([^\]\s][^\]]*?)\s*\]")
 
 
-RFM_BARE_MARKER_PATTERN = re.compile(
-    r'^(?P<prefix>\s*(?:>\s*)+)\[!(?P<tag>[A-Z][A-Z0-9_-]*)\]\s*$'
-)
+def load_markers(markers_file=_MARKERS_FILE):
+    """Returns the parsed marker registry as a dict, caching the default file."""
+    global _registry_cache
 
-RFM_LABELLED_MARKER_PATTERN = re.compile(
-    r'^(?P<prefix>\s*(?:>\s*)+)\[!(?P<tag>[A-Z][A-Z0-9_-]*)\]\s+(?P<label>\S.*?)\s*$'
-)
+    if markers_file == _MARKERS_FILE and _registry_cache is not None:
+        return _registry_cache
 
-LEGACY_BARE_MARKER_PATTERN = re.compile(
-    r'^\s*---\s+/?[\w-]+\s+---\s*$'
-)
+    yaml_parser = ruamel.yaml.YAML(typ="safe")
+    with open(markers_file, encoding="utf-8") as f:
+        registry = yaml_parser.load(f) or {}
 
-EMPTY_BLOCKQUOTE_PATTERN = re.compile(r'^\s*(?:>\s*)+$')
-FENCE_LINE_PREFIX_PATTERN = re.compile(r'^\s*(?:>\s*)*')
-SAME_LINE_FENCE_PATTERN = re.compile(r'^```[^`]*```$')
+    registry.setdefault("markers", [])
+    registry.setdefault("raw_patterns", [])
 
-
-def remove_eol(line):
-    return line.rstrip("\r\n")
+    if markers_file == _MARKERS_FILE:
+        _registry_cache = registry
+    return registry
 
 
-def get_eol(line):
-    if line.endswith("\r\n"):
-        return "\r\n"
-    if line.endswith("\n"):
-        return "\n"
-    if line.endswith("\r"):
-        return "\r"
-    return ""
+def _markers(registry=None):
+    return (registry or load_markers()).get("markers", [])
 
 
-def classify_line(line):
-    line_without_eol = remove_eol(line)
+def hideable_strings(registry=None):
+    """
+    Returns the list of literal strings to hide from translators (both syntaxes
+    plus raw patterns). Each is matched as a substring against Crowdin source
+    text. Order is preserved and duplicates removed.
+    """
+    registry = registry or load_markers()
+    strings = []
 
-    match = RFM_LABELLED_MARKER_PATTERN.match(line_without_eol)
-    if match:
-        return LINE_KIND_LABELLED_MARKER, match
+    for marker in _markers(registry):
+        if not marker.get("hide", False):
+            continue
+        legacy = marker.get("legacy") or {}
+        rfm = marker.get("rfm") or {}
+        for value in (legacy.get("open"), legacy.get("close"), rfm.get("alert")):
+            if value:
+                strings.append(value)
 
-    match = RFM_BARE_MARKER_PATTERN.match(line_without_eol)
-    if match:
-        return LINE_KIND_BARE_MARKER, match
+    strings.extend(registry.get("raw_patterns", []))
 
-    match = LEGACY_BARE_MARKER_PATTERN.match(line_without_eol)
-    if match:
-        return LINE_KIND_BARE_MARKER, match
-
-    match = EMPTY_BLOCKQUOTE_PATTERN.match(line_without_eol)
-    if match:
-        return LINE_KIND_PAIRED_EMPTY_BLOCKQUOTE, match
-
-    return LINE_KIND_REGULAR, None
-
-
-def is_marker_line(line):
-    line_kind, _ = classify_line(line)
-    return line_kind in (LINE_KIND_BARE_MARKER, LINE_KIND_LABELLED_MARKER)
-
-
-def is_rfm_bare_marker_line(line):
-    return RFM_BARE_MARKER_PATTERN.match(remove_eol(line)) is not None
-
-
-def is_paired_empty_blockquote(line):
-    line_kind, _ = classify_line(line)
-    return line_kind == LINE_KIND_PAIRED_EMPTY_BLOCKQUOTE
+    # de-duplicate, preserving order
+    seen = set()
+    unique = []
+    for s in strings:
+        if s not in seen:
+            seen.add(s)
+            unique.append(s)
+    return unique
 
 
-def iter_lines_with_fence_state(content):
-    inside_fenced_code = False
+def alert_keywords(registry=None):
+    """Returns the set of canonical English RFM alert keywords (e.g. {"TASK", "HINT"})."""
+    keywords = set()
+    for marker in _markers(registry):
+        rfm = marker.get("rfm") or {}
+        alert = rfm.get("alert")
+        if alert:
+            match = _ALERT_TOKEN_RE.search(alert)
+            if match:
+                keywords.add(match.group(1).strip().upper())
+    return keywords
 
-    for line in content.splitlines(keepends=True):
-        yield line, inside_fenced_code
-        if _count_fence_markers(line) % 2 == 1:
-            inside_fenced_code = not inside_fenced_code
 
-
-def _count_fence_markers(line):
-    content = remove_eol(line)
-    content_without_prefix = content[FENCE_LINE_PREFIX_PATTERN.match(content).end():]
-
-    if not content_without_prefix.startswith("```"):
-        return 0
-
-    if SAME_LINE_FENCE_PATTERN.match(content_without_prefix):
-        return 2
-
-    return 1
+def legacy_tag_names(registry=None):
+    """
+    Returns the set of known legacy section tag names (e.g. {"task", "hint"}),
+    derived from the registry's legacy open markers ("--- task ---" -> "task").
+    """
+    names = set()
+    for marker in _markers(registry):
+        legacy = marker.get("legacy") or {}
+        opener = legacy.get("open", "")
+        stripped = opener.strip().strip("-").strip()
+        if stripped:
+            names.add(stripped)
+    return names

@@ -31,6 +31,8 @@ setuptools.setup(
     author = __author__,
     author_email = __author_email__,
     packages = [__project__],
+    package_data={__project__: ['markers.yml']},
+    include_package_data=True,
     entry_points={
         'console_scripts': [
             'nttt = nttt:main'

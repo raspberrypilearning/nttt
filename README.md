@@ -8,6 +8,19 @@ Note - NTTT will work on Windows, macOS and Linux.
 
 For maintainers, [doc/transformations.md](doc/transformations.md) describes what NTTT changes in `meta.yml` and Markdown files (sections, HTML, formatting, URLs, and related behaviour).
 
+NTTT supports both the legacy (`--- task ---`) and the Raspberry Flavoured Markdown (`> [!TASK]`) syntaxes, which may be mixed in a single file. The structural markers for both syntaxes are defined in one editable data file — see [doc/markers.md](doc/markers.md) — which also drives the hide-strings mode. The design rationale for this dual-syntax + hide-strings work is recorded in [doc/plan-dual-syntax-hide-strings.md](doc/plan-dual-syntax-hide-strings.md).
+
+### Hide-strings mode
+
+NTTT can generate the list of Crowdin string IDs to hide from translators (markers from [`nttt/markers.yml`](nttt/markers.yml)):
+
+```bash
+crowdin string list --verbose | nttt --hide-strings > ids.txt
+while read -r id; do crowdin string edit "$id" --hidden; done < ids.txt
+```
+
+An example CI workflow for content repositories is in [doc/workflows/hide-strings.yml](doc/workflows/hide-strings.yml).
+
 ## Prerequisites
 
 The tool requires having Python 3.7 or newer. 
@@ -113,28 +126,6 @@ You can specify different directories for the input and output folder using the 
 ```bash
 nttt --input c:\path\to\project\de-DE --output c:\path\to\project\de-DE-tidy
 ```
-
-### Crowdin marker stripping and restoring
-
-NTTT has three processing modes:
-
-- `tidy` (default): restore stripped Markdown markers for non-English locale folders, then run the existing tidy-up transforms.
-- `strip`: remove non-translatable Markdown markers before uploading English source files to Crowdin.
-- `restore`: reinsert stripped Markdown markers into translated files after downloading from Crowdin.
-
-Use `strip` on the English source folder before Crowdin upload:
-
-```bash
-nttt --mode strip -i en -o en -Y on
-```
-
-Use `restore` on a translated locale folder after Crowdin download:
-
-```bash
-nttt --mode restore -i de-DE -e en -o de-DE -Y on
-```
-
-Modern bare markers such as `> [!TASK]` are removed entirely, along with their paired empty `>` line. Modern labelled markers such as `> [!ACCORDION] Where are my voice recordings stored?` keep the label available for translation by becoming `> Where are my voice recordings stored?`; restore reinserts `[!ACCORDION]` before the translated label. Legacy markers such as `--- task ---` and `--- /task ---` are also removed and restored by line alignment against `en/`.
 
 ### Help
 

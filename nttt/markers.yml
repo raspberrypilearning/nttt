@@ -1,0 +1,109 @@
+# NTTT marker registry
+# =====================
+# This is the single source of truth for the structural "markers" used in
+# Raspberry Pi project content. NTTT uses it for two things:
+#
+#   1. Hiding   - generating the list of marker strings that should be hidden
+#                 from translators in Crowdin (see `nttt --hide-strings`).
+#   2. Restoring - recognising and reverting markers that translators or Crowdin
+#                  may have changed, so they go back to their English form.
+#
+# Two markdown syntaxes are supported and may appear in the same file:
+#   * legacy  - kramdown-rpf, e.g.  --- task ---  ...  --- /task ---
+#   * rfm     - Raspberry Flavoured Markdown (GFM alerts), e.g.  > [!TASK]
+#
+# HOW TO EDIT (no Python needed):
+#   * To add a new block type, copy an existing "- name:" entry and change the
+#     values. Include whichever of `legacy:` / `rfm:` apply (a block may have
+#     only one syntax).
+#   * `hide: true`  means NTTT lists this marker for Crowdin to hide.
+#     `hide: false` keeps it visible to translators.
+#   * `legacy.open` / `legacy.close` are the exact marker lines. `close` is
+#     optional (some blocks, e.g. save, have no closing marker).
+#   * `rfm.alert` is the alert token exactly as it appears, including brackets.
+#
+# After editing, run the tests:  python -m unittest discover -s unit_test
+
+markers:
+  - name: task
+    hide: true
+    legacy: { open: "--- task ---", close: "--- /task ---" }
+    rfm:    { alert: "[!TASK]" }
+
+  - name: hints
+    hide: true
+    legacy: { open: "--- hints ---", close: "--- /hints ---" }
+    # RFM has no separate "hints" container - individual [!HINT] blocks are grouped.
+
+  - name: hint
+    hide: true
+    legacy: { open: "--- hint ---", close: "--- /hint ---" }
+    rfm:    { alert: "[!HINT]" }
+
+  - name: collapse           # RFM calls this ACCORDION; its title is translatable.
+    hide: true
+    legacy: { open: "--- collapse ---", close: "--- /collapse ---" }
+    rfm:    { alert: "[!ACCORDION]" }
+
+  - name: challenge
+    hide: true
+    legacy: { open: "--- challenge ---", close: "--- /challenge ---" }
+    rfm:    { alert: "[!CHALLENGE]" }
+
+  - name: code
+    hide: true
+    legacy: { open: "--- code ---", close: "--- /code ---" }
+    # RFM expresses code options as fenced-code attributes, not a marker line.
+
+  - name: save
+    hide: true
+    legacy: { open: "--- save ---" }   # no closing marker
+    rfm:    { alert: "[!SAVE]" }
+
+  - name: new-page
+    hide: true
+    legacy: { open: "--- new-page ---" }   # no closing marker
+    rfm:    { alert: '<br class="page-break" />' }
+
+  - name: no-print
+    hide: true
+    legacy: { open: "--- no-print ---", close: "--- /no-print ---" }
+    rfm:    { alert: "[!NOPRINT]" }
+
+  - name: print-only
+    hide: true
+    legacy: { open: "--- print-only ---", close: "--- /print-only ---" }
+    rfm:    { alert: "[!PRINTONLY]" }
+
+  - name: quiz
+    hide: true
+    legacy: { open: "--- quiz ---", close: "--- /quiz ---" }
+
+  - name: question
+    hide: true
+    legacy: { open: "--- question ---", close: "--- /question ---" }
+
+  - name: choices
+    hide: true
+    legacy: { open: "--- choices ---", close: "--- /choices ---" }
+
+  - name: feedback
+    hide: true
+    legacy: { open: "--- feedback ---", close: "--- /feedback ---" }
+
+  - name: info
+    hide: true
+    rfm: { alert: "[!INFO]" }
+
+  - name: tip
+    hide: true
+    rfm: { alert: "[!TIP]" }
+
+  - name: debug
+    hide: true
+    rfm: { alert: "[!DEBUG]" }
+
+# Non-block strings that should also be hidden from translators.
+# These are matched as plain substrings against the Crowdin source text.
+raw_patterns:
+  - "hero_image images/"
