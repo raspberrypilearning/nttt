@@ -1,4 +1,4 @@
-from .constants import ArgumentKeyConstants, Modes
+from .constants import ArgumentKeyConstants
 import os
 from pathlib import Path
 from argparse import ArgumentParser
@@ -51,11 +51,6 @@ def parse_command_line(version):
     parser.add_argument("-l", "--language",   help="The language of the content to be tidied up, defaults to basename(INPUT).")
     parser.add_argument("-v", "--volunteers", help="The list of volunteers as a comma separated list, defaults to an empty list.")
     parser.add_argument("-f", "--final",      help="The number of the final step file, defaults to the step file with the highest number.")
-    parser.add_argument("-m", "--mode",       choices=[Modes.TIDY, Modes.STRIP, Modes.RESTORE],
-                                                   help="The processing mode. Options are: tidy (default cleanup), "
-                                                   "strip (remove non-translatable structural markers before Crowdin upload), "
-                                                   "restore (restore stripped structural markers after Crowdin download). "
-                                                   "Default is tidy.")
     parser.add_argument("-D", "--Disable",    help="The risky features to be disabled, separated by commas. "
                                                    "Options are: fix_md (fix common markdown-related issues), "
                                                    "fix_html (fix common issues in HTML-like tags (<kbd>Return</kbd>)), "
@@ -132,11 +127,6 @@ def resolve_arguments(command_line_args):
     else:
         arguments[ArgumentKeyConstants.YES] = "off"
 
-    if hasattr(command_line_args, "mode") and command_line_args.mode:
-        arguments[ArgumentKeyConstants.MODE] = command_line_args.mode
-    else:
-        arguments[ArgumentKeyConstants.MODE] = Modes.TIDY
-
     return arguments
 
 
@@ -155,7 +145,6 @@ def show_arguments(arguments):
     print("Disabled functions - '{}'".format(arguments[ArgumentKeyConstants.DISABLE]))
     print("Logging - '{}'".format(arguments[ArgumentKeyConstants.LOGGING]))
     print("Yes - '{}'".format(arguments[ArgumentKeyConstants.YES]))
-    print("Mode - '{}'".format(arguments[ArgumentKeyConstants.MODE]))
 
 
 def check_folder(folder):

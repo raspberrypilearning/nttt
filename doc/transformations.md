@@ -35,28 +35,6 @@ Steps 1–7 can be skipped via **`--disable`** (see [`nttt/arguments.py`](../ntt
 
 ---
 
-## Crowdin marker strip/restore (`nttt/strip.py`, `nttt/restore.py`)
-
-**Modes:** `--mode strip`, `--mode restore`, and default `--mode tidy`.
-
-| Mode | Behaviour |
-|------|-----------|
-| `strip` | Runs on `en/` before Crowdin upload. Removes structural-only markers and keeps labelled marker text translatable. |
-| `restore` | Runs on a locale folder after Crowdin download. Rebuilds markers from the matching English file. |
-| `tidy` | For non-English locale folders, runs restore first, then the existing tidy transforms. |
-
-**Marker classification (`nttt/markers.py`):**
-
-| Kind | Pattern | Strip output | Restore output |
-|------|---------|--------------|----------------|
-| Modern bare | `> [!TASK]`, `> [!SAVE]`, nested forms like `> > [!HINT]` | Dropped. A following empty blockquote line (`>`, `> >`) is also dropped. | Copied back from `en/`. |
-| Modern labelled | `> [!ACCORDION] Where are my voice recordings stored?` | Rewritten to `> Where are my voice recordings stored?`. | Rewritten to `> [!ACCORDION] <translated label>`. |
-| Legacy bare | `--- task ---`, `--- /task ---`, `--- print-only ---`, `--- feedback ---` | Dropped. | Copied back from `en/`. |
-
-Restore uses line-index alignment against the stripped English file. If the translated file already contains at least as many legacy bare marker lines as the English reference, restore is skipped for that file to avoid duplicating markers. If the translated file has a different number of lines from the stripped English reference, NTTT logs a warning and leaves that file unchanged for this step.
-
-Fenced code blocks split by ` ``` ` are not stripped.
-
 ## 1. Section markers (`nttt/cleanup_sections.py`)
 
 **Function:** `fix_sections`

@@ -59,7 +59,6 @@ class TestArguments(unittest.TestCase):
                 self.Disable = False
                 self.Logging = False
                 self.Yes = False
-                self.mode = None
 
         # Using the os.chdir function for a subdirectory of a directory created
         # with TemporaryDirectory doesn't work on Windows and macOS. Therefore,
@@ -86,7 +85,6 @@ class TestArguments(unittest.TestCase):
         self.assertEqual(arguments[nttt.arguments.ArgumentKeyConstants.DISABLE], [])
         self.assertEqual(arguments[nttt.arguments.ArgumentKeyConstants.LOGGING], "off")
         self.assertEqual(arguments[nttt.arguments.ArgumentKeyConstants.YES], "off")
-        self.assertEqual(arguments[nttt.arguments.ArgumentKeyConstants.MODE], "tidy")
 
         input_folder = Path(data_folder, "da-DK")
         output_folder = Path(data_folder, "output")
@@ -103,7 +101,6 @@ class TestArguments(unittest.TestCase):
         command_line_args.Disable = "fix_md,fix_html"
         command_line_args.Logging = "on"
         command_line_args.Yes = "on"
-        command_line_args.mode = "strip"
         arguments = nttt.arguments.resolve_arguments(command_line_args)
         self.assertEqual(arguments[nttt.arguments.ArgumentKeyConstants.INPUT], input_folder)
         self.assertEqual(arguments[nttt.arguments.ArgumentKeyConstants.OUTPUT], output_folder)
@@ -114,7 +111,6 @@ class TestArguments(unittest.TestCase):
         self.assertEqual(arguments[nttt.arguments.ArgumentKeyConstants.DISABLE], ["fix_md", "fix_html"])
         self.assertEqual(arguments[nttt.arguments.ArgumentKeyConstants.LOGGING], "on")
         self.assertEqual(arguments[nttt.arguments.ArgumentKeyConstants.YES], "on")
-        self.assertEqual(arguments[nttt.arguments.ArgumentKeyConstants.MODE], "strip")
 
     def test_check_folder(self):
         ''' Test case for the check_folder function:
