@@ -56,12 +56,19 @@ def parse_command_line(version):
                                                    "fix_html (fix common issues in HTML-like tags (<kbd>Return</kbd>)), "
                                                    "fix_sections (fix common issues in section tags (--- hint ---)), "
                                                    "revert_section_translation (revert translation for section tags), "
+                                                   "fix_alerts (fix common issues in RFM alert tags (> [!HINT])), "
+                                                   "revert_alert_translation (revert translation for RFM alert tags), "
                                                    "fix_formatting (fix common issues in formatting tags ({:class=\"block3motion\"})). "
                                                    "Defaults to all risky features to be enabled.")
     parser.add_argument("-L", "--Logging",    help="Logging of modifications. Options are on and off. Default is off.")
     parser.add_argument("-Y", "--Yes",        help="Automatic yes to prompts. "
                                                    "If enabled assume 'yes' as answer to all prompts and run non-interactively. "
                                                    "Options are on and off. Default is off.")
+    parser.add_argument("--hide-strings",     action="store_true",
+                                              help="Hide-strings mode. Reads 'crowdin string list --verbose' "
+                                                   "output on stdin and prints the IDs of strings to hide "
+                                                   "(those containing a marker from markers.yml), one per line. "
+                                                   "Does not tidy up any files.")
     return parser.parse_args()
 
 

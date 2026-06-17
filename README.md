@@ -8,6 +8,19 @@ Note - NTTT will work on Windows, macOS and Linux.
 
 For maintainers, [doc/transformations.md](doc/transformations.md) describes what NTTT changes in `meta.yml` and Markdown files (sections, HTML, formatting, URLs, and related behaviour).
 
+NTTT supports both the legacy (`--- task ---`) and the Raspberry Flavoured Markdown (`> [!TASK]`) syntaxes, which may be mixed in a single file. The structural markers for both syntaxes are defined in one editable data file — see [doc/markers.md](doc/markers.md) — which also drives the hide-strings mode. The design rationale for this dual-syntax + hide-strings work is recorded in [doc/plan-dual-syntax-hide-strings.md](doc/plan-dual-syntax-hide-strings.md).
+
+### Hide-strings mode
+
+NTTT can generate the list of Crowdin string IDs to hide from translators (markers from [`nttt/markers.yml`](nttt/markers.yml)):
+
+```bash
+crowdin string list --verbose | nttt --hide-strings > ids.txt
+while read -r id; do crowdin string edit "$id" --hidden; done < ids.txt
+```
+
+An example CI workflow for content repositories is in [doc/workflows/hide-strings.yml](doc/workflows/hide-strings.yml).
+
 ## Prerequisites
 
 The tool requires having Python 3.7 or newer. 

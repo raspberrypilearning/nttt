@@ -16,14 +16,20 @@ NTTT does **not** process standalone `.html` files. HTML-related steps run on **
 
 For each `.md` file, [`nttt/tidyup.py`](../nttt/tidyup.py) applies, in order:
 
-1. **`fix_sections`** — normalise `---` section lines (Crowdin quirks).
+1. **`fix_sections`** — normalise legacy `---` section lines (Crowdin quirks).
 2. **`revert_section_translation`** — optional; restore English section tag lines when structure matches.
-3. **`trim_md_tags`** — strip padding inside paired Markdown delimiters (outside ` ``` ` fences).
-4. **`trim_html_tags`** — strip padding inside simple inline HTML tags (outside single `` ` `` spans).
-5. **`trim_formatting_tags`** — normalise `{ … }` attribute blocks after a word (Scratch/Pico-style).
-6. **URL rewrite:** replace `/en/` with `/<language>/` everywhere in the file body.
+3. **`fix_alerts`** — normalise RFM blockquote alert headers (`>[! task ]` → `> [!TASK]`).
+4. **`revert_alert_translation`** — optional; revert translated RFM alert keywords to English when structure matches (keeps translated titles, e.g. ACCORDION).
+5. **`trim_md_tags`** — strip padding inside paired Markdown delimiters (outside ` ``` ` fences).
+6. **`trim_html_tags`** — strip padding inside simple inline HTML tags (outside single `` ` `` spans).
+7. **`trim_formatting_tags`** — normalise `{ … }` attribute blocks after a word (Scratch/Pico-style).
+8. **URL rewrite:** replace `/en/` with `/<language>/` everywhere in the file body.
 
-Steps 1–5 can be skipped via **`--disable`** (see [`nttt/arguments.py`](../nttt/arguments.py)).
+Both syntaxes are handled on every file, so a file may freely **mix** legacy and RFM markers.
+
+Steps 1–7 can be skipped via **`--disable`** (see [`nttt/arguments.py`](../nttt/arguments.py)):
+`fix_sections`, `revert_section_translation`, `fix_alerts`, `revert_alert_translation`,
+`fix_md`, `fix_html`, `fix_formatting`.
 
 `meta.yml` is handled separately by **`fix_meta`** (YAML round-trip, revert non-translatable keys from English). This doc focuses on Markdown/HTML-style transforms.
 
@@ -104,7 +110,10 @@ After cleanup: **replace every `/en/` with `/<language>/`** in the Markdown file
 |---------|--------|
 | Orchestration | `nttt/tidyup.py`, `nttt/__init__.py` |
 | CLI / disable flags | `nttt/arguments.py` |
-| Sections | `nttt/cleanup_sections.py` |
+| Sections (legacy `--- … ---`) | `nttt/cleanup_sections.py` |
+| Alerts (RFM `> [!…]`) | `nttt/cleanup_alerts.py` |
+| Marker registry (both syntaxes) | `nttt/markers.yml`, `nttt/markers.py` |
+| Hide-list generation | `nttt/hide_strings.py` |
 | Markdown emphasis / code delimiters | `nttt/cleanup_markdown.py` |
 | Inline HTML | `nttt/cleanup_html.py` |
 | Brace attributes | `nttt/cleanup_formatting.py` |
@@ -138,3 +147,20 @@ NTTT_INSPECT=1 python -m unittest discover -s test -p "test_fixtures.py" -v
 ```
 
 After either run, open any file in `test/fixtures/output/` alongside its counterpart in `test/fixtures/input/` to see before and after.
+
+## Round-trip checks (hide + restore)
+
+`test/test_roundtrip.py` lets you inspect the two hide/restore flows locally (same
+`NTTT_INSPECT` convention):
+
+| Flow | Fixtures | What it shows |
+|------|----------|---------------|
+| **Hide** | `test/fixtures/hide/` | A captured `crowdin string list --verbose` (`input/`) → the IDs to hide and a `report.txt` matching each ID to its marker (`output/`). |
+| **Restore** | `test/fixtures/restore/` | A mangled translation (`input/`) + the English template (`en/`) → the restored file (`output/`), diffed against the committed oracle (`expected/`). Exercises a file that **mixes** legacy `--- task ---` with RFM `> [!HINT]` / `> [!ACCORDION]`. |
+
+```bash
+python -m unittest discover -s test -p "test_roundtrip.py" -v          # assertions on
+NTTT_INSPECT=1 python -m unittest discover -s test -p "test_roundtrip.py" -v   # write outputs only
+```
+
+See [doc/markers.md](markers.md) for the marker registry and hide-strings mode.

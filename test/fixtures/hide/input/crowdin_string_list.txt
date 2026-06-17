@@ -1,0 +1,13 @@
+#5001  Welcome to this project. You will build a game.
+#5002  --- task ---
+#5003  Complete the activity below.
+#5004  --- /task ---
+#5005  --- no-print ---
+#5006  This content is only shown on screen.
+#5007  --- /no-print ---
+#5008  > [!HINT]
+#5009  Try clicking the green flag first.
+#5010  > [!ACCORDION] Downloading the Raspberry Pi software
+#5011  > [!SAVE]
+#5012  hero_image images/cover.png
+#5013  Well done, you have finished the project!
