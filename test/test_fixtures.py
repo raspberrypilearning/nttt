@@ -4,8 +4,12 @@ Integration fixture tests for NTTT.
 Each test processes a real .md fixture file through fix_md_step and writes the
 output to test/fixtures/output/ — open those files to inspect the before/after.
 
-Run with:
-    python -m unittest test/test_fixtures.py
+Normal run (assertions enabled):
+    python -m unittest discover -s test -p "test_fixtures.py" -v
+
+Inspect mode (writes outputs, skips assertions — useful when adding new
+transformations and you want to see the raw output before writing assertions):
+    NTTT_INSPECT=1 python -m unittest discover -s test -p "test_fixtures.py" -v
 """
 import os
 import unittest
@@ -16,11 +20,21 @@ INPUT = os.path.join(FIXTURES, 'input')
 EN = os.path.join(FIXTURES, 'en')
 OUTPUT = os.path.join(FIXTURES, 'output')
 
+INSPECT = os.environ.get('NTTT_INSPECT') == '1'
+
 
 class TestFixtures(unittest.TestCase):
 
     def setUp(self):
         os.makedirs(OUTPUT, exist_ok=True)
+
+    def _assertIn(self, member, container):
+        if not INSPECT:
+            super().assertIn(member, container)
+
+    def _assertNotIn(self, member, container):
+        if not INSPECT:
+            super().assertNotIn(member, container)
 
     def _run(self, step, lang='nl'):
         src = os.path.join(INPUT, step)
@@ -40,17 +54,17 @@ class TestFixtures(unittest.TestCase):
         """
         result = self._run('step_1.md')
 
-        self.assertIn('--- task ---', result)
-        self.assertIn('--- hints ---', result)
-        self.assertIn('--- hint ---', result)
-        self.assertIn('--- /hint ---', result)
-        self.assertIn('--- /hints ---', result)
-        self.assertIn('--- /task ---', result)
+        self._assertIn('--- task ---', result)
+        self._assertIn('--- hints ---', result)
+        self._assertIn('--- hint ---', result)
+        self._assertIn('--- /hint ---', result)
+        self._assertIn('--- /hints ---', result)
+        self._assertIn('--- /task ---', result)
 
-        self.assertNotIn('\\---', result)
-        self.assertNotIn('--- taak ---', result)
-        self.assertNotIn('--- tips ---', result)
-        self.assertNotIn('--- tip ---', result)
+        self._assertNotIn('\\---', result)
+        self._assertNotIn('--- taak ---', result)
+        self._assertNotIn('--- tips ---', result)
+        self._assertNotIn('--- tip ---', result)
 
         print(f'\n  Output: {os.path.join(OUTPUT, "step_1.md")}')
 
@@ -65,15 +79,15 @@ class TestFixtures(unittest.TestCase):
         """
         result = self._run('step_2.md')
 
-        self.assertIn('_groene vlag_', result)
-        self.assertIn('**zeven**', result)
-        self.assertIn('`je naam`', result)
+        self._assertIn('_groene vlag_', result)
+        self._assertIn('**zeven**', result)
+        self._assertIn('`je naam`', result)
 
-        self.assertNotIn('_ groene vlag _', result)
-        self.assertNotIn('** zeven **', result)
-        self.assertNotIn('` je naam `', result)
+        self._assertNotIn('_ groene vlag _', result)
+        self._assertNotIn('** zeven **', result)
+        self._assertNotIn('` je naam `', result)
 
-        self.assertIn('3 * 2 * 1', result)
+        self._assertIn('3 * 2 * 1', result)
 
         print(f'\n  Output: {os.path.join(OUTPUT, "step_2.md")}')
 
@@ -88,13 +102,13 @@ class TestFixtures(unittest.TestCase):
         """
         result = self._run('step_3.md')
 
-        self.assertIn('<kbd>Enter</kbd>', result)
-        self.assertIn('<strong>OK</strong>', result)
+        self._assertIn('<kbd>Enter</kbd>', result)
+        self._assertIn('<strong>OK</strong>', result)
 
-        self.assertNotIn('<kbd> Enter </kbd>', result)
-        self.assertNotIn('<strong> OK </strong>', result)
+        self._assertNotIn('<kbd> Enter </kbd>', result)
+        self._assertNotIn('<strong> OK </strong>', result)
 
-        self.assertIn('`<code> ongekruist </code>`', result)
+        self._assertIn('`<code> ongekruist </code>`', result)
 
         print(f'\n  Output: {os.path.join(OUTPUT, "step_3.md")}')
 
@@ -109,13 +123,13 @@ class TestFixtures(unittest.TestCase):
         """
         result = self._run('step_4.md')
 
-        self.assertIn('{:class="block3control"}', result)
-        self.assertIn('{:class="block3sensing"}', result)
-        self.assertIn('{:target="_blank"}', result)
+        self._assertIn('{:class="block3control"}', result)
+        self._assertIn('{:class="block3sensing"}', result)
+        self._assertIn('{:target="_blank"}', result)
 
-        self.assertNotIn('{ : class', result)
-        self.assertNotIn('CLASS', result)
-        self.assertNotIn('" _ blank"', result)
+        self._assertNotIn('{ : class', result)
+        self._assertNotIn('CLASS', result)
+        self._assertNotIn('" _ blank"', result)
 
         print(f'\n  Output: {os.path.join(OUTPUT, "step_4.md")}')
 
@@ -129,10 +143,10 @@ class TestFixtures(unittest.TestCase):
         """
         result = self._run('step_5.md', lang='nl')
 
-        self.assertIn('/nl/projects/boat-race', result)
-        self.assertIn('/nl/projects/another-project', result)
+        self._assertIn('/nl/projects/boat-race', result)
+        self._assertIn('/nl/projects/another-project', result)
 
-        self.assertNotIn('/en/projects/', result)
+        self._assertNotIn('/en/projects/', result)
 
         print(f'\n  Output: {os.path.join(OUTPUT, "step_5.md")}')
 
@@ -144,22 +158,22 @@ class TestFixtures(unittest.TestCase):
         """
         result = self._run('step_6.md', lang='nl')
 
-        self.assertIn('--- task ---', result)
-        self.assertIn('--- hint ---', result)
-        self.assertNotIn('--- taak ---', result)
-        self.assertNotIn('\\---', result)
+        self._assertIn('--- task ---', result)
+        self._assertIn('--- hint ---', result)
+        self._assertNotIn('--- taak ---', result)
+        self._assertNotIn('\\---', result)
 
-        self.assertIn('_starten_', result)
-        self.assertNotIn('_ starten _', result)
+        self._assertIn('_starten_', result)
+        self._assertNotIn('_ starten _', result)
 
-        self.assertIn('<kbd>Enter</kbd>', result)
-        self.assertNotIn('<kbd> Enter </kbd>', result)
+        self._assertIn('<kbd>Enter</kbd>', result)
+        self._assertNotIn('<kbd> Enter </kbd>', result)
 
-        self.assertIn('{:class="block3control"}', result)
-        self.assertNotIn('{ : class', result)
+        self._assertIn('{:class="block3control"}', result)
+        self._assertNotIn('{ : class', result)
 
-        self.assertIn('/nl/projects/', result)
-        self.assertNotIn('/en/projects/', result)
+        self._assertIn('/nl/projects/', result)
+        self._assertNotIn('/en/projects/', result)
 
         print(f'\n  Output: {os.path.join(OUTPUT, "step_6.md")}')
 

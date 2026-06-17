@@ -109,3 +109,32 @@ After cleanup: **replace every `/en/` with `/<language>/`** in the Markdown file
 | Inline HTML | `nttt/cleanup_html.py` |
 | Brace attributes | `nttt/cleanup_formatting.py` |
 | Split "every other segment" | `nttt/utilities.py` → `apply_to_every_other_part` |
+
+---
+
+## Running the fixture tests
+
+`test/test_fixtures.py` contains six integration tests, one per transformation type. Each test runs a real Dutch-translation `.md` file through `fix_md_step` and writes the result to `test/fixtures/output/` (gitignored) so you can open it and compare it with the input.
+
+| Fixture | What it covers |
+|---------|---------------|
+| `step_1.md` | Section markers — escaped `\---`, jammed lines, section name revert |
+| `step_2.md` | Markdown delimiters — `_ text _`, `** text **`; code block preserved |
+| `step_3.md` | Inline HTML — `<kbd> Enter </kbd>` → `<kbd>Enter</kbd>`; backtick spans preserved |
+| `step_4.md` | Formatting braces — `{ : class = "..."}`, `_blank` target |
+| `step_5.md` | URL rewrite — `/en/` → `/nl/` |
+| `step_6.md` | All of the above combined |
+
+**Normal run** (assertions on — use in CI or to catch regressions):
+
+```bash
+python -m unittest discover -s test -p "test_fixtures.py" -v
+```
+
+**Inspect mode** (assertions off — use when adding new input to see the raw output before writing assertions):
+
+```bash
+NTTT_INSPECT=1 python -m unittest discover -s test -p "test_fixtures.py" -v
+```
+
+After either run, open any file in `test/fixtures/output/` alongside its counterpart in `test/fixtures/input/` to see before and after.
