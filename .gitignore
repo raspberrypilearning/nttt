@@ -37,3 +37,6 @@ docs/_build
 
 # Unit test output
 *.log
+
+# Fixture output files (written by test/test_fixtures.py for inspection)
+test/fixtures/output/
