@@ -38,6 +38,14 @@ class TestHideStrings(unittest.TestCase):
         results = hide_strings.find_hidden_strings("102\t--- task ---\n")
         self.assertEqual(hide_strings.unique_ids(results), ["102"])
 
+    def test_finds_collapsed_markers_when_verbose_text_is_on_next_line(self):
+        listing = (
+            "#108\n"
+            "Text: --- /task --- --- /no-print ---\n"
+        )
+        results = hide_strings.find_hidden_strings(listing)
+        self.assertEqual(hide_strings.unique_ids(results), ["108"])
+
     def test_unique_ids_dedupes(self):
         results = [{"id": "5"}, {"id": "5"}, {"id": "9"}]
         self.assertEqual(hide_strings.unique_ids(results), ["5", "9"])

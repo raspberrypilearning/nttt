@@ -29,17 +29,21 @@ def find_hidden_strings(string_list_text, markers=None):
     markers = hideable_strings() if markers is None else markers
     results = []
 
+    current_id = None
+
     for line in string_list_text.splitlines():
+        tokens = line.split()
+        if tokens:
+            id_match = _ID_RE.match(tokens[0])
+            if id_match:
+                current_id = id_match.group(1)
+
         matched = next((marker for marker in markers if marker in line), None)
         if matched is None:
             continue
 
-        tokens = line.split()
-        if not tokens:
-            continue
-        id_match = _ID_RE.match(tokens[0])
-        if id_match:
-            results.append({"id": id_match.group(1), "marker": matched, "source": line.strip()})
+        if current_id:
+            results.append({"id": current_id, "marker": matched, "source": line.strip()})
 
     return results
 
