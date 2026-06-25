@@ -19,6 +19,12 @@ from .markers import hideable_strings
 
 # The verbose listing puts the string ID first, e.g. "#12345  source text ...".
 _ID_RE = re.compile(r"^#?(\d+)\b")
+_ESCAPED_MARKDOWN_RE = re.compile(r"\\([\\`*_{}\[\]()#+\-.!<>/])")
+
+
+def _normalise_for_marker_match(line):
+    """Returns Crowdin CLI text with Markdown punctuation escapes removed."""
+    return _ESCAPED_MARKDOWN_RE.sub(r"\1", line)
 
 
 def find_hidden_strings(string_list_text, markers=None):
@@ -38,7 +44,7 @@ def find_hidden_strings(string_list_text, markers=None):
             if id_match:
                 current_id = id_match.group(1)
 
-        search_line = line.replace("\\/", "/")
+        search_line = _normalise_for_marker_match(line)
         matched = next((marker for marker in markers if marker in search_line), None)
         if matched is None:
             continue

@@ -53,6 +53,13 @@ class TestHideStrings(unittest.TestCase):
         results = hide_strings.find_hidden_strings(listing)
         self.assertEqual(hide_strings.unique_ids(results), ["109"])
 
+    def test_finds_collapsed_close_markers_when_crowdin_escapes_markdown(self):
+        listing = (
+            "#110  \\--- \\/task \\--- \\--- \\/no-print \\---\n"
+        )
+        results = hide_strings.find_hidden_strings(listing)
+        self.assertEqual(hide_strings.unique_ids(results), ["110"])
+
     def test_unique_ids_dedupes(self):
         results = [{"id": "5"}, {"id": "5"}, {"id": "9"}]
         self.assertEqual(hide_strings.unique_ids(results), ["5", "9"])
