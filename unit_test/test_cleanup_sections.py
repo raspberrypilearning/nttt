@@ -126,6 +126,18 @@ class TestCleanupSections(unittest.TestCase):
 
         self.assertEqual(cleanup_sections.fix_sections(c_initial, self.logging), c_target)
 
+    def test_fix_adjacent_task_and_no_print_markers(self):
+        c_initial = ('--- no-print --- --- task ---\n'
+                     'Try the project.\n'
+                     '--- /task --- --- /no-print ---')
+        c_target = ('--- no-print ---\n'
+                    '--- task ---\n'
+                    'Try the project.\n'
+                    '--- /task ---\n'
+                    '--- /no-print ---')
+
+        self.assertEqual(cleanup_sections.fix_sections(c_initial, self.logging), c_target)
+
     def test_fix_nested_feedback(self):
         c_initial = (
             '--- choices ---\n'

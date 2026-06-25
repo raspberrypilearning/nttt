@@ -14,17 +14,29 @@ Typical use in CI:
 """
 import re
 import sys
+import html
 from .markers import hideable_strings
 
 
 # The verbose listing puts the string ID first, e.g. "#12345  source text ...".
-_ID_RE = re.compile(r"^#?(\d+)\b")
+_ID_RE = re.compile(r"^\s*#?(\d+)\b")
+_LABELLED_ID_RE = re.compile(r"^\s*(?:string\s+)?id\s*:\s*#?(\d+)\b", re.IGNORECASE)
+_ANSI_RE = re.compile(r"\x1b\[[0-9;?]*[ -/]*[@-~]")
 _ESCAPED_MARKDOWN_RE = re.compile(r"\\([\\`*_{}\[\]()#+\-.!<>/])")
 
 
 def _normalise_for_marker_match(line):
     """Returns Crowdin CLI text with Markdown punctuation escapes removed."""
+    line = _ANSI_RE.sub("", line)
+    line = html.unescape(line)
     return _ESCAPED_MARKDOWN_RE.sub(r"\1", line)
+
+
+def _string_id_from_line(line):
+    """Returns a Crowdin string ID from a verbose/plain listing line, if present."""
+    line = _ANSI_RE.sub("", line)
+    id_match = _ID_RE.match(line) or _LABELLED_ID_RE.match(line)
+    return id_match.group(1) if id_match else None
 
 
 def find_hidden_strings(string_list_text, markers=None):
@@ -38,11 +50,9 @@ def find_hidden_strings(string_list_text, markers=None):
     current_id = None
 
     for line in string_list_text.splitlines():
-        tokens = line.split()
-        if tokens:
-            id_match = _ID_RE.match(tokens[0])
-            if id_match:
-                current_id = id_match.group(1)
+        string_id = _string_id_from_line(line)
+        if string_id:
+            current_id = string_id
 
         search_line = _normalise_for_marker_match(line)
         matched = next((marker for marker in markers if marker in search_line), None)

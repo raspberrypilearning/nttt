@@ -60,6 +60,21 @@ class TestHideStrings(unittest.TestCase):
         results = hide_strings.find_hidden_strings(listing)
         self.assertEqual(hide_strings.unique_ids(results), ["110"])
 
+    def test_finds_crowdin_combined_marker_lines_after_labelled_id(self):
+        listing = (
+            "String ID: 111\n"
+            "Text: --- /task --- --- /no-print ---\n"
+        )
+        results = hide_strings.find_hidden_strings(listing)
+        self.assertEqual(hide_strings.unique_ids(results), ["111"])
+
+    def test_finds_crowdin_combined_marker_lines_with_html_entities(self):
+        listing = (
+            "#112  --- &#x2F;task --- --- &#x2F;no-print ---\n"
+        )
+        results = hide_strings.find_hidden_strings(listing)
+        self.assertEqual(hide_strings.unique_ids(results), ["112"])
+
     def test_unique_ids_dedupes(self):
         results = [{"id": "5"}, {"id": "5"}, {"id": "9"}]
         self.assertEqual(hide_strings.unique_ids(results), ["5", "9"])
