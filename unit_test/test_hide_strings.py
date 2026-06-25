@@ -46,6 +46,13 @@ class TestHideStrings(unittest.TestCase):
         results = hide_strings.find_hidden_strings(listing)
         self.assertEqual(hide_strings.unique_ids(results), ["108"])
 
+    def test_finds_close_markers_when_crowdin_escapes_slashes(self):
+        listing = (
+            "#109  --- \\/task --- --- \\/no-print ---\n"
+        )
+        results = hide_strings.find_hidden_strings(listing)
+        self.assertEqual(hide_strings.unique_ids(results), ["109"])
+
     def test_unique_ids_dedupes(self):
         results = [{"id": "5"}, {"id": "5"}, {"id": "9"}]
         self.assertEqual(hide_strings.unique_ids(results), ["5", "9"])

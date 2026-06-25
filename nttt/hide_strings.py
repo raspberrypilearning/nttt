@@ -38,7 +38,8 @@ def find_hidden_strings(string_list_text, markers=None):
             if id_match:
                 current_id = id_match.group(1)
 
-        matched = next((marker for marker in markers if marker in line), None)
+        search_line = line.replace("\\/", "/")
+        matched = next((marker for marker in markers if marker in search_line), None)
         if matched is None:
             continue
 
