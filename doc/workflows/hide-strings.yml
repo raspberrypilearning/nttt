@@ -44,17 +44,75 @@ jobs:
           chmod +x ~/bin/crowdin
           echo "PATH=$HOME/bin:$PATH" >> $GITHUB_ENV
 
-      - name: Hide matching strings
+      - name: Set string visibility
         run: |
           set -euo pipefail
           crowdin --version
-          # NTTT reads the Crowdin listing and prints the IDs of strings to hide
-          # (those containing a marker from markers.yml, legacy or title-less RFM).
-          crowdin string list --verbose | nttt --hide-strings > ids.txt
-          echo "Hiding $(wc -l < ids.txt) strings"
-          while read -r id; do
-            crowdin string edit "$id" --hidden
-          done < ids.txt
+          crowdin string list --verbose > crowdin-strings.txt
+          # NTTT reads the Crowdin listing and prints IDs to hide or unhide.
+          # Hide structural-only markers; unhide titled RFM alerts so translators
+          # can translate the title.
+          nttt --hide-strings < crowdin-strings.txt > hide_ids.txt
+          nttt --unhide-strings < crowdin-strings.txt > unhide_ids.txt
+          hide_count=$(grep -c . hide_ids.txt || true)
+          unhide_count=$(grep -c . unhide_ids.txt || true)
+          echo "Hiding $hide_count strings"
+          echo "Unhiding $unhide_count strings"
+          # Batch updates via API are much faster than one `crowdin string edit` per ID.
+          batch_size=100
+          set_hidden_state() {
+            local ids_file value action past_tense response_file
+            ids_file="$1"
+            value="$2"
+            action="$3"
+            past_tense="$4"
+            response_file="/tmp/crowdin-${action}-response.json"
+
+            if [[ ! -s "$ids_file" ]]; then
+              echo "No strings to $action"
+              return
+            fi
+
+            local batch=()
+            local changed=0
+            local total
+            total=$(grep -c . "$ids_file" || true)
+
+            patch_batch() {
+              local patch http_code batch_count
+              patch=$(printf '%s\n' "${batch[@]}" | jq -R --argjson value "$value" 'select(length > 0) | {op: "replace", path: ("/" + . + "/isHidden"), value: $value}' | jq -s '.')
+              http_code=$(curl -sS -o "$response_file" -w "%{http_code}" \
+                -X PATCH "https://api.crowdin.com/api/v2/projects/${CROWDIN_PROJECT_ID}/strings" \
+                -H "Authorization: Bearer ${CROWDIN_API_TOKEN}" \
+                -H "Content-Type: application/json" \
+                -d "$patch")
+              if [[ "$http_code" -ge 300 ]]; then
+                echo "Batch $action failed (HTTP $http_code):"
+                cat "$response_file"
+                exit 1
+              fi
+              batch_count=${#batch[@]}
+              changed=$((changed + batch_count))
+              echo "$past_tense $changed / $total strings"
+              batch=()
+            }
+
+            while read -r id; do
+              [[ -z "$id" ]] && continue
+              batch+=("$id")
+              if ((${#batch[@]} >= batch_size)); then
+                patch_batch
+              fi
+            done < "$ids_file"
+
+            if ((${#batch[@]} > 0)); then
+              patch_batch
+            fi
+
+            echo "Done - $past_tense $changed strings"
+          }
+          set_hidden_state hide_ids.txt true "hide" "Hid"
+          set_hidden_state unhide_ids.txt false "unhide" "Unhid"
         env:
           CROWDIN_PROJECT_ID: ${{ secrets.CROWDIN_PROJECT_ID }}
           CROWDIN_API_TOKEN: ${{ secrets.CROWDIN_API_TOKEN }}

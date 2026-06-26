@@ -69,6 +69,11 @@ def parse_command_line(version):
                                                    "output on stdin and prints the IDs of strings to hide "
                                                    "(those containing a marker from markers.yml), one per line. "
                                                    "Does not tidy up any files.")
+    parser.add_argument("--unhide-strings",   action="store_true",
+                                              help="Unhide-strings mode. Reads 'crowdin string list --verbose' "
+                                                   "output on stdin and prints the IDs of titled RFM alert strings "
+                                                   "that should be visible to translators, one per line. "
+                                                   "Does not tidy up any files.")
     return parser.parse_args()
 
 

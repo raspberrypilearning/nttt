@@ -19,6 +19,13 @@ crowdin string list --verbose | nttt --hide-strings > ids.txt
 while read -r id; do crowdin string edit "$id" --hidden; done < ids.txt
 ```
 
+It can also generate IDs for titled RFM alert strings that should be visible so
+their titles can be translated:
+
+```bash
+crowdin string list --verbose | nttt --unhide-strings > ids.txt
+```
+
 An example CI workflow for content repositories is in [doc/workflows/hide-strings.yml](doc/workflows/hide-strings.yml).
 
 ## Prerequisites

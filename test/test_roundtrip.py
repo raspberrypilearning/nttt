@@ -40,12 +40,18 @@ class TestHideFlow(unittest.TestCase):
 
         results = hide_strings.find_hidden_strings(listing)
         ids = hide_strings.unique_ids(results)
+        unhide_results = hide_strings.find_unhidden_strings(listing)
+        unhide_ids = hide_strings.unique_ids(unhide_results)
 
         # Write the IDs and a human-readable report for inspection.
         with open(os.path.join(HIDE, 'output', 'ids.txt'), 'w', encoding='utf-8') as f:
             f.write("\n".join(ids) + "\n")
+        with open(os.path.join(HIDE, 'output', 'unhide_ids.txt'), 'w', encoding='utf-8') as f:
+            f.write("\n".join(unhide_ids) + "\n")
         with open(os.path.join(HIDE, 'output', 'report.txt'), 'w', encoding='utf-8') as f:
             f.write(hide_strings.format_report(results) + "\n")
+        with open(os.path.join(HIDE, 'output', 'unhide_report.txt'), 'w', encoding='utf-8') as f:
+            f.write(hide_strings.format_report(unhide_results) + "\n")
 
         if not INSPECT:
             # markers (legacy + title-less RFM + raw) are hidden ...
@@ -54,6 +60,7 @@ class TestHideFlow(unittest.TestCase):
             # ... plain prose and titled RFM alerts are not.
             for prose in ['5001', '5003', '5006', '5009', '5010', '5013']:
                 self.assertNotIn(prose, ids)
+            self.assertEqual(unhide_ids, ['5010'])
 
         print(f'\n  Output: {os.path.join(HIDE, "output", "ids.txt")}')
 

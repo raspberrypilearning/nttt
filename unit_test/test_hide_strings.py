@@ -37,6 +37,20 @@ class TestHideStrings(unittest.TestCase):
         results = hide_strings.find_hidden_strings(titled_task)
         self.assertEqual(hide_strings.unique_ids(results), [])
 
+    def test_finds_titled_rfm_alerts_to_unhide(self):
+        results = hide_strings.find_unhidden_strings(SAMPLE_LISTING)
+        ids = hide_strings.unique_ids(results)
+        self.assertEqual(ids, ["105"])
+
+        titled_task = "#109  [!TASK] With a title\n"
+        results = hide_strings.find_unhidden_strings(titled_task)
+        self.assertEqual(hide_strings.unique_ids(results), ["109"])
+
+    def test_does_not_unhide_titleless_rfm_alerts(self):
+        titleless_task = "#109  [!TASK]\n"
+        results = hide_strings.find_unhidden_strings(titleless_task)
+        self.assertEqual(hide_strings.unique_ids(results), [])
+
     def test_records_matched_marker(self):
         results = hide_strings.find_hidden_strings(SAMPLE_LISTING)
         by_id = {r["id"]: r["marker"] for r in results}
@@ -93,6 +107,11 @@ class TestHideStrings(unittest.TestCase):
         out = io.StringIO()
         hide_strings.run(io.StringIO(SAMPLE_LISTING), out)
         self.assertEqual(out.getvalue().split(), ["102", "103", "104", "106", "107"])
+
+    def test_run_prints_unhide_ids(self):
+        out = io.StringIO()
+        hide_strings.run(io.StringIO(SAMPLE_LISTING), out, unhide=True)
+        self.assertEqual(out.getvalue().split(), ["105"])
 
 
 if __name__ == '__main__':

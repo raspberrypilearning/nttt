@@ -74,11 +74,14 @@ python -m unittest discover -s unit_test
 NTTT generates the Crowdin hide-list itself (replacing the old grep pipeline). It
 reads `crowdin string list --verbose` on stdin and prints the IDs of strings
 whose source text contains a hideable marker. RFM alert lines with titles, such
-as `> [!ACCORDION] Downloading the software`, are not hidden:
+as `> [!ACCORDION] Downloading the software`, are emitted by
+`--unhide-strings` so workflows can repair previously hidden Crowdin strings:
 
 ```bash
 crowdin string list --verbose | nttt --hide-strings > ids.txt
 while read -r id; do crowdin string edit "$id" --hidden; done < ids.txt
+
+crowdin string list --verbose | nttt --unhide-strings > ids-to-unhide.txt
 ```
 
 See [`doc/workflows/hide-strings.yml`](workflows/hide-strings.yml) for the CI version.

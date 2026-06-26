@@ -11,6 +11,11 @@ def main():
         run_hide_strings()
         return
 
+    # Unhide-strings mode: generate the Crowdin unhide-list from stdin and exit.
+    if getattr(command_line_args, "unhide_strings", False):
+        run_hide_strings(unhide=True)
+        return
+
     resolved_arguments = resolve_arguments(command_line_args)
     show_arguments(resolved_arguments)
     if (check_arguments(resolved_arguments)):

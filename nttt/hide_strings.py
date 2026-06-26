@@ -12,6 +12,9 @@ Typical use in CI:
 
     crowdin string list --verbose | nttt --hide-strings > ids.txt
     while read -r id; do crowdin string edit "$id" --hidden; done < ids.txt
+
+    crowdin string list --verbose | nttt --unhide-strings > ids.txt
+    # Patch these IDs to isHidden=false in Crowdin.
 """
 import re
 import sys
@@ -59,6 +62,13 @@ def _matching_hideable_marker(line, markers):
     return None
 
 
+def _matching_titled_rfm_marker(line, markers):
+    for marker in markers:
+        if marker in line and _has_rfm_alert_title(line, marker):
+            return marker
+    return None
+
+
 def find_hidden_strings(string_list_text, markers=None):
     """
     Returns a list of dicts ``{"id", "marker", "source"}`` for each line of the
@@ -88,6 +98,32 @@ def find_hidden_strings(string_list_text, markers=None):
     return results
 
 
+def find_unhidden_strings(string_list_text, markers=None):
+    """
+    Returns a list of dicts ``{"id", "marker", "source"}`` for titled RFM
+    alert strings that should be visible to translators.
+    """
+    markers = hideable_strings() if markers is None else markers
+    results = []
+
+    current_id = None
+
+    for line in string_list_text.splitlines():
+        string_id = _string_id_from_line(line)
+        if string_id:
+            current_id = string_id
+
+        search_line = _normalise_for_marker_match(line)
+        matched = _matching_titled_rfm_marker(search_line, markers)
+        if matched is None:
+            continue
+
+        if current_id:
+            results.append({"id": current_id, "marker": matched, "source": line.strip()})
+
+    return results
+
+
 def unique_ids(results):
     """Returns the IDs from ``find_hidden_strings`` de-duplicated, order preserved."""
     seen = set()
@@ -106,11 +142,15 @@ def format_report(results):
     )
 
 
-def run(input_stream=None, output_stream=None):
-    """Reads a Crowdin listing from ``input_stream`` and prints IDs to hide."""
+def run(input_stream=None, output_stream=None, unhide=False):
+    """Reads a Crowdin listing from ``input_stream`` and prints matching IDs."""
     input_stream = input_stream if input_stream is not None else sys.stdin
     output_stream = output_stream if output_stream is not None else sys.stdout
 
-    results = find_hidden_strings(input_stream.read())
+    if unhide:
+        results = find_unhidden_strings(input_stream.read())
+    else:
+        results = find_hidden_strings(input_stream.read())
+
     for string_id in unique_ids(results):
         print(string_id, file=output_stream)
