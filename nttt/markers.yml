@@ -17,6 +17,7 @@
 #     values. Include whichever of `legacy:` / `rfm:` apply (a block may have
 #     only one syntax).
 #   * `hide: true`  means NTTT lists this marker for Crowdin to hide.
+#     RFM alert lines with title text stay visible so the title can be translated.
 #     `hide: false` keeps it visible to translators.
 #   * `legacy.open` / `legacy.close` are the exact marker lines. `close` is
 #     optional (some blocks, e.g. save, have no closing marker).

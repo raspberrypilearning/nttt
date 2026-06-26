@@ -31,6 +31,8 @@ Each block type is one list entry:
 ```
 
 - `hide: true` lists this marker for Crowdin to hide; `false` keeps it visible.
+  RFM alert lines with title text on the same line stay visible so the title can
+  be translated.
 - `legacy.open` / `legacy.close` are the exact marker lines (`close` is optional —
   some blocks, e.g. `save`, have no closing marker).
 - `rfm.alert` is the alert token exactly as written, including the brackets.
@@ -70,8 +72,9 @@ python -m unittest discover -s unit_test
 ## Hide-strings mode
 
 NTTT generates the Crowdin hide-list itself (replacing the old grep pipeline). It
-reads `crowdin string list --verbose` on stdin and prints the IDs of any string
-whose source text contains a hideable marker:
+reads `crowdin string list --verbose` on stdin and prints the IDs of strings
+whose source text contains a hideable marker. RFM alert lines with titles, such
+as `> [!ACCORDION] Downloading the software`, are not hidden:
 
 ```bash
 crowdin string list --verbose | nttt --hide-strings > ids.txt

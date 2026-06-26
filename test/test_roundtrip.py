@@ -48,11 +48,11 @@ class TestHideFlow(unittest.TestCase):
             f.write(hide_strings.format_report(results) + "\n")
 
         if not INSPECT:
-            # markers (legacy + RFM + raw) are hidden ...
-            for expected in ['5002', '5004', '5005', '5007', '5008', '5010', '5011', '5012']:
+            # markers (legacy + title-less RFM + raw) are hidden ...
+            for expected in ['5002', '5004', '5005', '5007', '5008', '5011', '5012']:
                 self.assertIn(expected, ids)
-            # ... plain prose is not.
-            for prose in ['5001', '5003', '5006', '5009', '5013']:
+            # ... plain prose and titled RFM alerts are not.
+            for prose in ['5001', '5003', '5006', '5009', '5010', '5013']:
                 self.assertNotIn(prose, ids)
 
         print(f'\n  Output: {os.path.join(HIDE, "output", "ids.txt")}')
